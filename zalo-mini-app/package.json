@@ -1,0 +1,21 @@
+{
+  "name": "my-jarvis-mini-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "zmp start",
+    "build": "zmp build"
+  },
+  "dependencies": {
+    "react": "^18.2",
+    "react-dom": "^18.2",
+    "zmp-sdk": "^2.30",
+    "zmp-ui": "^0.5",
+    "zustand": "^5.0"
+  },
+  "devDependencies": {
+    "zmp-cli": "^2.30",
+    "typescript": "^5.7",
+    "@types/react": "^18"
+  }
+}

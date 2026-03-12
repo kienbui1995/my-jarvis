@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "MY JARVIS",
+    "headerTitle": "MY JARVIS 🤖",
+    "statusBarColor": "#1a1a2e",
+    "textColor": "#ffffff",
+    "headerColor": "#1a1a2e",
+    "headerTextColor": "#ffffff",
+    "actionBarColor": "#1a1a2e"
+  },
+  "pages": [
+    { "path": "index", "name": "Chat" },
+    { "path": "tasks", "name": "Tasks" },
+    { "path": "calendar", "name": "Lịch" },
+    { "path": "notifications", "name": "Thông báo" }
+  ],
+  "bottomNavigation": [
+    { "path": "index", "icon": "chat", "label": "Chat" },
+    { "path": "tasks", "icon": "list", "label": "Tasks" },
+    { "path": "calendar", "icon": "calendar", "label": "Lịch" },
+    { "path": "notifications", "icon": "notification", "label": "TB" }
+  ]
+}

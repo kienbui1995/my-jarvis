@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+*.egg
+
+# Node
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Alembic
+backend/db/migrations/versions/*.pyc
+
+# Logs
+*.log
+logs/
+
+# MinIO data
+minio-data/
+
+# Redis
+dump.rdb
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml

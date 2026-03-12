@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>MY JARVIS - One Pager</title>
+<style>
+@page { size: A4; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff; color: #1a1a2e; padding: 20mm 18mm; font-size: 10px; line-height: 1.5; }
+h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 2px; }
+h2 { font-size: 11px; color: #6c63ff; text-transform: uppercase; letter-spacing: 2px; margin: 12px 0 6px; border-bottom: 2px solid #6c63ff; padding-bottom: 3px; }
+h3 { font-size: 10px; color: #1a1a2e; font-weight: 700; }
+p, li, td, th { font-size: 9.5px; line-height: 1.5; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1a1a2e; padding-bottom: 8px; margin-bottom: 10px; }
+.tagline { font-size: 13px; color: #555; font-style: italic; }
+.contact { text-align: right; font-size: 8.5px; color: #666; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.stat-box { background: #f0eeff; border-radius: 6px; padding: 8px; text-align: center; }
+.stat-num { font-size: 18px; font-weight: 800; color: #6c63ff; }
+.stat-label { font-size: 7.5px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+th { background: #f0eeff; padding: 4px 6px; text-align: left; font-size: 8.5px; color: #6c63ff; }
+td { padding: 3px 6px; font-size: 9px; border-bottom: 1px solid #eee; }
+ul { padding-left: 14px; }
+li { margin-bottom: 2px; }
+.highlight { color: #6c63ff; font-weight: 700; }
+.card { background: #fafafe; border: 1px solid #e8e6f0; border-radius: 6px; padding: 8px; }
+.footer { margin-top: 10px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 8px; color: #999; text-align: center; }
+@media print { body { padding: 15mm; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+<div>
+<h1>🤖 MY JARVIS</h1>
+<div class="tagline">"Hiểu bạn. Làm thay bạn. Dữ liệu thuộc về bạn."</div>
+</div>
+<div class="contact">
+<strong>[Founder Name]</strong><br>
+[email@domain.com]<br>
+[+84 xxx xxx xxx]<br>
+Pre-Seed · Q1 2026
+</div>
+</div>
+
+<div class="grid-2">
+<!-- LEFT COLUMN -->
+<div>
+
+<h2>Problem</h2>
+<p><strong>87% người Việt đã dùng AI</strong> — nhưng <strong>91% từng bỏ cuộc</strong> vì: AI không hiểu ngữ cảnh VN, chỉ trả lời không hành động, không nhớ gì, hay bịa thông tin, và quá đắt ($20/tháng) hoặc quá phức tạp (cần developer).</p>
+
+<h2>Solution</h2>
+<p><strong>MY JARVIS</strong> — trợ lý AI cá nhân đầu tiên xây dựng cho người Việt. Không chỉ chat, mà <span class="highlight">hành động thay bạn</span>, <span class="highlight">nhớ & học</span> theo thời gian, và <span class="highlight">chủ động gợi ý</span> trước khi được hỏi. Chạy native trên Zalo — nơi 77M người Việt đang ở.</p>
+<ul>
+<li><strong>Agentic:</strong> Tự tạo task, đặt lịch, draft email, phân tích tài liệu</li>
+<li><strong>Memory:</strong> Personal Context Graph — biết tên, nghề, mục tiêu, thói quen</li>
+<li><strong>Proactive:</strong> Morning briefing, deadline alerts, financial warnings tự động</li>
+<li><strong>Vietnamese-first:</strong> Hiểu vùng miền, lịch âm, văn hoá VN</li>
+</ul>
+
+<h2>Market</h2>
+<div class="grid-3">
+<div class="stat-box"><div class="stat-num">$435B</div><div class="stat-label">TAM 2034</div></div>
+<div class="stat-box"><div class="stat-num">$4.4B</div><div class="stat-label">SAM (SEA)</div></div>
+<div class="stat-box"><div class="stat-num">$44M</div><div class="stat-label">SOM (VN)</div></div>
+</div>
+<ul style="margin-top:4px">
+<li>VN AI market: $554M → $1.8B (CAGR 31%)</li>
+<li>AI Agent market: CAGR 46.61% — fastest growing segment</li>
+<li>OpenAI mua OpenClaw, Meta mua Manus ($2B) — agentic AI là chiến trường 2026</li>
+</ul>
+
+<h2>Competition</h2>
+<table>
+<tr><th></th><th>ChatGPT</th><th>Kiki</th><th>OpenClaw</th><th style="color:#6c63ff">JARVIS</th></tr>
+<tr><td>Vietnamese</td><td>❌</td><td>✅</td><td>❌</td><td style="color:#6c63ff">✅</td></tr>
+<tr><td>Agentic</td><td>🟡</td><td>❌</td><td>✅</td><td style="color:#6c63ff">✅</td></tr>
+<tr><td>Memory</td><td>🟡</td><td>❌</td><td>🟡</td><td style="color:#6c63ff">✅</td></tr>
+<tr><td>Zalo native</td><td>❌</td><td>🟡</td><td>❌</td><td style="color:#6c63ff">✅</td></tr>
+<tr><td>Consumer UX</td><td>✅</td><td>✅</td><td>❌</td><td style="color:#6c63ff">✅</td></tr>
+<tr><td>VN pricing</td><td>❌ $20</td><td>Free</td><td>$2-75/d</td><td style="color:#6c63ff">$4/mo</td></tr>
+</table>
+
+</div>
+
+<!-- RIGHT COLUMN -->
+<div>
+
+<h2>Business Model</h2>
+<table>
+<tr><th></th><th>Free</th><th>Pro (99K)</th><th>Pro+ (199K)</th></tr>
+<tr><td>Revenue</td><td>$0</td><td>$4/mo</td><td>$8/mo</td></tr>
+<tr><td>COGS</td><td>$0.33</td><td>$0.87</td><td>$2.77</td></tr>
+<tr><td>Gross Margin</td><td>—</td><td><strong>78%</strong></td><td><strong>65%</strong></td></tr>
+</table>
+<p style="margin-top:3px">99K VNĐ = 2 ly cà phê. Phase 2: + usage-based + affiliate + B2B API.</p>
+
+<h2>Financial Projections</h2>
+<table>
+<tr><th>Metric</th><th>M6</th><th>M12</th><th>M18</th><th>M24</th></tr>
+<tr><td>Users</td><td>5K</td><td>50K</td><td>150K</td><td>400K</td></tr>
+<tr><td>Paid</td><td>250</td><td>3,500</td><td>12,000</td><td>34,000</td></tr>
+<tr><td>MRR</td><td>$1.1K</td><td>$16.1K</td><td>$55.2K</td><td>$156K</td></tr>
+<tr><td>ARR</td><td>$13K</td><td>$187K</td><td>$643K</td><td><strong>$1.88M</strong></td></tr>
+<tr><td>Gross Margin</td><td>26%</td><td>37%</td><td>50%</td><td><strong>59%</strong></td></tr>
+<tr><td>LTV:CAC</td><td>3x</td><td>14x</td><td>14x</td><td><strong>25x</strong></td></tr>
+</table>
+<p>Operating break-even: <strong>Month 21</strong>. Rule of 40: <strong>46%</strong> by M24.</p>
+
+<h2>Moat</h2>
+<ul>
+<li><strong>Context Compounds:</strong> Càng dùng → AI càng hiểu → càng khó bỏ (a16z insight)</li>
+<li><strong>Vietnamese Data Flywheel:</strong> Nhiều user VN → model hiểu VN tốt hơn</li>
+<li><strong>Ecosystem Lock-in:</strong> Zalo + Calendar + Finance = switching cost cao</li>
+</ul>
+
+<h2>Go-to-Market</h2>
+<p><strong>Phase 1 (M1-3):</strong> Zalo communities, build-in-public, TikTok demos → 1K users, CAC ~$0<br>
+<strong>Phase 2 (M4-6):</strong> Micro-KOL, Facebook Ads, co-working partnerships → 10K users<br>
+<strong>Phase 3 (M7+):</strong> Performance marketing, B2B, PR → 100K+ users</p>
+
+<h2>Team</h2>
+<p><strong>[Founder/CEO]</strong> — [Background]<br>
+<strong>[CTO]</strong> — [Background]<br>
+<strong>[Key Hire #3]</strong> — [Background]<br>
+Scaling: 3 → 5 (M4) → 8 (M7) → 12-15 (M13+)</p>
+
+<h2>The Ask</h2>
+<div class="card" style="border-left:4px solid #6c63ff">
+<div class="grid-2">
+<div>
+<p style="font-size:18px;font-weight:800;color:#6c63ff">$120 — 150K</p>
+<p>Pre-Seed · SAFE · Post-money $1.2M<br>18 months runway</p>
+</div>
+<div>
+<p><strong>Use of Funds:</strong></p>
+<p>Engineering & LLM: 45%<br>Team: 30%<br>Marketing: 15%<br>Ops & Legal: 10%</p>
+</div>
+</div>
+<p style="margin-top:6px"><strong>Milestones:</strong> M3: 1K users + PMF → M6: 5K users + $1.7K MRR → M9: 15K users + Seed-ready</p>
+</div>
+
+</div>
+</div>
+
+<div class="footer">
+MY JARVIS · Trợ lý AI cá nhân cho người Việt · [website] · Confidential — March 2026
+</div>
+
+</body>
+</html>

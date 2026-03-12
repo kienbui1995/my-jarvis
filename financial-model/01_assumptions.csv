@@ -1,0 +1,83 @@
+MY JARVIS - Financial Model Assumptions,,,
+Last Updated: March 2026,,,
+,,,
+=== PRICING ===,,,
+Parameter,Value,Unit,Notes
+Free tier price,0,USD/month,20 messages/day limit
+Pro tier price,4.00,USD/month,99K VND - unlimited messages + full features
+Pro+ tier price,8.00,USD/month,199K VND - deep research + doc analysis + API
+Team tier price (Phase 2),3.20,USD/user/month,79K VND - min 3 users - launches M10
+,,,
+=== USER GROWTH ===,,,
+Parameter,Value,Unit,Notes
+M1 new users,200,users,Founder-led organic
+Monthly growth rate M1-M3,80%,percent,Organic + community seeding
+Monthly growth rate M4-M6,50%,percent,KOL + paid ads kick in
+Monthly growth rate M7-M12,35%,percent,Performance marketing + partnerships
+Monthly growth rate M13-M18,25%,percent,Brand + referral flywheel
+Monthly growth rate M19-M24,20%,percent,Mature growth
+Monthly churn rate (free),15%,percent,High churn expected for free users
+Monthly churn rate (paid),5%,percent,Context compounds = lower churn
+,,,
+=== CONVERSION ===,,,
+Parameter,Value,Unit,Notes
+Free to Pro conversion (M1-M3),3%,percent,Early adopters only
+Free to Pro conversion (M4-M6),5%,percent,Product improving + social proof
+Free to Pro conversion (M7-M12),7%,percent,Feature depth + proactive layer
+Free to Pro conversion (M13-M24),8%,percent,Mature product + word of mouth
+Pro to Pro+ upsell rate,15%,percent,Of Pro users upgrade to Pro+
+Team tier adoption (from M10),2%,percent,Of total paid users convert to Team
+Average team size,5,users,Per team subscription
+,,,
+=== LLM COSTS (per user per month) ===,,,
+Parameter,Value,Unit,Notes
+Free user LLM cost,0.25,USD/month,~7 msgs/day avg × cheap model (Gemini Flash)
+Pro user LLM cost,0.70,USD/month,~20 msgs/day × smart routing (70/20/10 split)
+Pro+ user LLM cost,2.50,USD/month,~30 msgs/day × more complex queries + research
+LLM cost reduction per quarter,8%,percent,Prompt caching optimization + price drops
+,,,
+=== INFRASTRUCTURE COSTS ===,,,
+Parameter,Value,Unit,Notes
+Base infra (servers + DB),300,USD/month,Minimum viable infra
+Infra cost per 1000 users,50,USD/month,Incremental scaling
+Vector DB per 1000 users,20,USD/month,Memory/embedding storage
+Zalo OA business account,5,USD/month,~120K VND
+Telegram Bot API,0,USD/month,Free
+Domain + SSL + misc,10,USD/month,Fixed
+,,,
+=== TEAM COSTS ===,,,
+Parameter,Value,Unit,Notes
+Founder/CEO salary,1500,USD/month,Below market - equity compensated
+Backend AI Engineer,2000,USD/month,VN market rate senior
+Frontend Engineer,1500,USD/month,VN market rate mid-senior
+Growth Marketer (from M4),1200,USD/month,VN market rate
+AI/ML Engineer (from M4),2000,USD/month,VN market rate senior
+DevOps (from M7),1500,USD/month,VN market rate
+Designer (from M7),1200,USD/month,VN market rate
+Community Manager (from M7),800,USD/month,VN market rate junior
+Additional Engineers (from M13),1800,USD/month,VN market rate × 2 hires
+BD Manager (from M13),1500,USD/month,VN market rate
+Customer Success (from M13),1000,USD/month,VN market rate
+,,,
+=== MARKETING COSTS ===,,,
+Parameter,Value,Unit,Notes
+M1-M3 monthly marketing,200,USD/month,Mostly organic - minimal spend
+M4-M6 monthly marketing,2500,USD/month,KOL + Facebook Ads + content
+M7-M12 monthly marketing,7500,USD/month,Performance marketing + PR
+M13-M18 monthly marketing,15000,USD/month,Scale acquisition
+M19-M24 monthly marketing,20000,USD/month,Mature marketing mix
+,,,
+=== FUNDING ===,,,
+Parameter,Value,Unit,Notes
+Pre-seed raise,150000,USD,Target Q1 2026
+Pre-seed valuation (post-money),1200000,USD,SAFE
+Seed raise (M9-M12),750000,USD,Target when hitting 15K users
+Seed valuation (post-money),6000000,USD,Based on traction multiples
+Series A raise (M18-M24),3500000,USD,Target when hitting $60K+ MRR
+Cloud credits (Google/AWS),25000,USD,Startup programs - offsets infra cost
+,,,
+=== OTHER ===,,,
+Parameter,Value,Unit,Notes
+Payment processing fee,3%,percent,Stripe/local payment gateway
+Tax rate (Vietnam),20%,percent,Corporate income tax
+Working capital buffer,2,months,Minimum cash reserve

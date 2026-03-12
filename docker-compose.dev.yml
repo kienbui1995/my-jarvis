@@ -1,0 +1,36 @@
+services:
+  postgres:
+    ports:
+      - "5435:5432"
+
+  redis:
+    ports:
+      - "6381:6379"
+
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  backend:
+    build:
+      target: dev
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      target: dev
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev

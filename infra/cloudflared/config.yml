@@ -1,0 +1,15 @@
+tunnel: 938ece6b-a33d-4031-b50e-06a6004ad4ca
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # API + WebSocket → backend
+  - hostname: jarvis.pmai.space
+    path: /api/.*
+    service: http://backend:8000
+    originRequest:
+      noTLSVerify: true
+  # Everything else → frontend
+  - hostname: jarvis.pmai.space
+    service: http://frontend:3000
+  # Catch-all (required)
+  - service: http_status:404
