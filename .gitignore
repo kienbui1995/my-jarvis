@@ -47,3 +47,5 @@ dump.rdb
 htmlcov/
 .coverage
 coverage.xml
+.kiro/
+*.db
