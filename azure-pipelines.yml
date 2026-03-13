@@ -1,0 +1,63 @@
+trigger:
+  branches:
+    include: [master]
+
+pr:
+  branches:
+    include: [master]
+
+stages:
+  - stage: CI
+    jobs:
+      - job: backend_lint
+        displayName: Backend Lint
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+          - script: pip install ruff && ruff check .
+            workingDirectory: backend
+
+      - job: frontend_lint
+        displayName: Frontend Lint
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "22.x"
+          - script: npm ci && npm run lint
+            workingDirectory: frontend
+
+      - job: frontend_build
+        displayName: Frontend Build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "22.x"
+          - script: npm ci && npm run build
+            workingDirectory: frontend
+
+  - stage: Deploy
+    dependsOn: CI
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    jobs:
+      - job: deploy
+        displayName: Deploy to Production
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: SSH@0
+            displayName: Deploy via SSH
+            inputs:
+              sshEndpoint: jarvis-server
+              runOptions: inline
+              inline: |
+                cd ~/my-jarvis
+                git pull origin master
+                make build
+                make prod
