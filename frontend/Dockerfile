@@ -11,9 +11,12 @@ CMD ["npm", "run", "dev"]
 # --- Build ---
 FROM deps AS builder
 COPY . .
-ENV NEXT_PUBLIC_API_URL=/api/v1
-ENV NEXT_PUBLIC_WS_URL=wss://jarvis.pmai.space/api/v1/ws/chat
-ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=820597896287-ui375qvmgov4g645a7j2ndseov4jl4sc.apps.googleusercontent.com
+ARG NEXT_PUBLIC_API_URL=/api/v1
+ARG NEXT_PUBLIC_WS_URL=wss://localhost/api/v1/ws/chat
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 RUN npm run build
 
 # --- Prod target ---

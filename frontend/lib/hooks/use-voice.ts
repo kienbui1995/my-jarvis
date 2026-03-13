@@ -30,16 +30,29 @@ export function useSTT(onResult: (text: string) => void) {
 }
 
 // --- TTS ---
+let _voices: SpeechSynthesisVoice[] = [];
+if (typeof window !== "undefined" && window.speechSynthesis) {
+  _voices = speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => { _voices = speechSynthesis.getVoices(); };
+}
+
+function getViVoice(): SpeechSynthesisVoice | null {
+  return _voices.find(v => v.lang === "vi-VN")
+    || _voices.find(v => v.lang.startsWith("vi"))
+    || null;
+}
+
 export function useTTS() {
   const [speaking, setSpeaking] = useState(false);
   const uttRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const speak = useCallback((text: string) => {
     if (speaking) { speechSynthesis.cancel(); setSpeaking(false); return; }
-    // Strip markdown for cleaner speech
     const clean = text.replace(/[#*`>\[\]()!_~|]/g, "").replace(/\n+/g, ". ");
     const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = "vi-VN";
+    const viVoice = getViVoice();
+    if (viVoice) { utt.voice = viVoice; utt.lang = viVoice.lang; }
+    else { utt.lang = "vi-VN"; }
     utt.rate = 1.05;
     utt.onend = () => setSpeaking(false);
     utt.onerror = () => setSpeaking(false);

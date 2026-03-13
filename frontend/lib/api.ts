@@ -81,4 +81,6 @@ export const api = {
     if (params?.event_type) q.set("event_type", params.event_type);
     return request<Array<{ id: string; event_type: string; node: string; tool_name: string | null; model_used: string | null; duration_ms: number; cost: number; timestamp: string; error: string | null }>>(`/audit?${q}`);
   },
+  // Feedback
+  submitFeedback: (messageId: string, rating: string) => request<{ ok: boolean }>("/feedback", { method: "POST", body: JSON.stringify({ message_id: messageId, rating }) }),
 };

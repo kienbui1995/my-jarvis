@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className="flex h-screen overflow-hidden">
+      <body className="min-h-screen">
         <a href="#main-content" className="skip-to-content">Bỏ qua đến nội dung</a>
         {children}
         <ToastContainer />

@@ -4,8 +4,27 @@ import type { Message } from "@/lib/stores/chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { Volume2, VolumeX } from "lucide-react";
-import { useTTS } from "@/lib/hooks/use-voice";
+import { Volume2, VolumeX, ThumbsUp, ThumbsDown, Loader2 } from "lucide-react";
+import { usePiperTTS } from "@/lib/hooks/use-piper-tts";
+import { useState } from "react";
+import { api } from "@/lib/api";
+
+function FeedbackButtons({ messageId }: { messageId: string }) {
+  const [sent, setSent] = useState<"up" | "down" | null>(null);
+
+  const send = async (rating: "up" | "down") => {
+    setSent(rating);
+    try { await api.submitFeedback(messageId, rating); } catch {}
+  };
+
+  if (sent) return <span className="text-xs">{sent === "up" ? "👍" : "👎"}</span>;
+  return (
+    <>
+      <button onClick={() => send("up")} aria-label="Hữu ích" className="hover:text-green-400 transition-colors"><ThumbsUp size={12} /></button>
+      <button onClick={() => send("down")} aria-label="Chưa tốt" className="hover:text-red-400 transition-colors"><ThumbsDown size={12} /></button>
+    </>
+  );
+}
 
 function ToolCallBlock({ name, result, status }: { name: string; args: Record<string, string>; result?: string; status: string }) {
   return (
@@ -32,7 +51,7 @@ function AiContent({ content }: { content: string }) {
 export function MessageBubble({ message, isGrouped }: { message: Message; isGrouped: boolean }) {
   const isUser = message.role === "user";
   const time = message.timestamp.toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit" });
-  const { speaking, speak } = useTTS();
+  const { speaking, loading, speak } = usePiperTTS();
 
   return (
     <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start", isGrouped ? "mt-1" : "mt-5")}>
@@ -57,9 +76,10 @@ export function MessageBubble({ message, isGrouped }: { message: Message; isGrou
           {time}
           {!isUser && message.content && !message.streaming && (
             <button onClick={() => speak(message.content)} aria-label={speaking ? "Dừng đọc" : "Đọc tin nhắn"} className="hover:text-[var(--text-primary)] transition-colors">
-              {speaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+              {loading ? <Loader2 size={12} className="animate-spin" /> : speaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
             </button>
           )}
+          {!isUser && message.content && !message.streaming && <FeedbackButtons messageId={message.id} />}
         </p>}
       </div>
     </div>

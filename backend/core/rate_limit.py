@@ -1,4 +1,4 @@
-"""Rate limiting — Redis sliding window counter per user."""
+"""Rate limiting — split read/write, Redis sliding window."""
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -6,17 +6,20 @@ from starlette.responses import JSONResponse
 from jose import jwt, JWTError
 from core.config import settings
 
+# Read (GET) = cheap, high limit. Write (POST/PUT/DELETE) = expensive, stricter.
 TIER_LIMITS = {
-    "free": {"rpm": 30, "daily": 50},
-    "pro": {"rpm": 120, "daily": 500},
-    "pro_plus": {"rpm": 300, "daily": -1},
+    "free":     {"read_rpm": 120, "write_rpm": 30, "daily_write": 100},
+    "pro":      {"read_rpm": 300, "write_rpm": 60, "daily_write": 1000},
+    "pro_plus": {"read_rpm": 600, "write_rpm": 120, "daily_write": -1},
 }
 
-WS_LIMITS = {"free": 20, "pro": 60, "pro_plus": 120}  # messages/min
+WS_LIMITS = {"free": 20, "pro": 60, "pro_plus": 120}
+
+SKIP_PATHS = ("/health", "/docs", "/openapi.json")
+SKIP_PREFIXES = ("/api/v1/auth/", "/api/v1/webhooks/")
 
 
 async def _check_rate(redis, key: str, limit: int, window: int = 60) -> bool:
-    """Sliding window counter. Returns True if allowed."""
     if limit < 0:
         return True
     now = int(time.time())
@@ -29,7 +32,6 @@ async def _check_rate(redis, key: str, limit: int, window: int = 60) -> bool:
 
 
 def _extract_user(request: Request) -> tuple[str, str]:
-    """Extract user_id and tier from JWT in Authorization header."""
     auth = request.headers.get("authorization", "")
     if not auth.startswith("Bearer "):
         return "", "free"
@@ -43,24 +45,28 @@ def _extract_user(request: Request) -> tuple[str, str]:
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if path in ("/health", "/docs", "/openapi.json") or request.method == "OPTIONS" or path.startswith(("/api/v1/auth/", "/api/v1/webhooks/", "/api/v1/notifications")):
+        if path in SKIP_PATHS or request.method == "OPTIONS" or any(path.startswith(p) for p in SKIP_PREFIXES):
             return await call_next(request)
 
         redis = request.app.state.redis
         user_id, tier = _extract_user(request)
         identity = user_id or request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host
         limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+        is_write = request.method in ("POST", "PUT", "DELETE", "PATCH")
 
-        if not await _check_rate(redis, f"rate:rpm:{identity}", limits["rpm"]):
+        # Read vs write RPM
+        rpm_key = f"rate:{'w' if is_write else 'r'}:{identity}"
+        rpm_limit = limits["write_rpm"] if is_write else limits["read_rpm"]
+        if not await _check_rate(redis, rpm_key, rpm_limit):
             return JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
 
-        if not await _check_rate(redis, f"rate:daily:{identity}", limits["daily"], window=86400):
+        # Daily limit only for writes (expensive operations)
+        if is_write and not await _check_rate(redis, f"rate:daily_w:{identity}", limits["daily_write"], window=86400):
             return JSONResponse({"detail": "Daily limit exceeded"}, status_code=429)
 
         return await call_next(request)
 
 
 async def check_ws_rate(redis, user_id: str, tier: str = "free") -> bool:
-    """Check WebSocket message rate. Returns True if allowed."""
     limit = WS_LIMITS.get(tier, 20)
     return await _check_rate(redis, f"rate:ws:{user_id}", limit)

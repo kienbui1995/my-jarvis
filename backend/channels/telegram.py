@@ -1,3 +1,5 @@
+import hmac
+
 import httpx
 
 from channels.base import ChannelAdapter, JarvisMessage, JarvisResponse
@@ -33,6 +35,9 @@ class TelegramAdapter(ChannelAdapter):
             await client.post(f"{self._base_url}/sendMessage", json=body)
 
     async def verify_webhook(self, payload: dict, headers: dict) -> bool:
-        # Telegram uses secret_token header set during webhook registration
-        token = headers.get("x-telegram-bot-api-secret-token", "")
-        return token == settings.TELEGRAM_BOT_TOKEN[:20]
+        secret = settings.TELEGRAM_WEBHOOK_SECRET
+        if not secret:
+            return True  # no secret configured = skip verification (dev)
+        return hmac.compare_digest(
+            headers.get("x-telegram-bot-api-secret-token", ""), secret
+        )

@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://redis:6379/0"
 
-    # LLM
+    # LiteLLM Proxy
+    LITELLM_BASE_URL: str = "http://litellm:4000/v1"
+    LITELLM_API_KEY: str = ""
+
+    # LLM (fallback nếu không dùng proxy)
     GOOGLE_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
@@ -40,6 +44,7 @@ class Settings(BaseSettings):
     # Telegram
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_BOT_USERNAME: str = ""
+    TELEGRAM_WEBHOOK_SECRET: str = ""
 
     # MinIO
     MINIO_ENDPOINT: str = "minio:9000"
@@ -51,6 +56,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # Sentry
+    SENTRY_DSN: str = ""
 
     # Feature flags
     RATE_LIMIT_ENABLED: bool = True

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import secrets
 
 import bcrypt
 from jose import jwt
@@ -20,7 +21,8 @@ def create_access_token(sub: str, tier: str = "free") -> str:
 
 
 def create_refresh_token(sub: str) -> str:
+    jti = secrets.token_hex(16)
     expire = datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     return jwt.encode(
-        {"sub": sub, "exp": expire, "type": "refresh"}, settings.SECRET_KEY, settings.JWT_ALGORITHM
+        {"sub": sub, "exp": expire, "type": "refresh", "jti": jti}, settings.SECRET_KEY, settings.JWT_ALGORITHM
     )

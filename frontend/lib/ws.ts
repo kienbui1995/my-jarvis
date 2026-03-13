@@ -12,8 +12,11 @@ export type WSMessage =
 export function createWSClient(onMessage: (msg: WSMessage) => void, onClose?: () => void) {
   const url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/api/v1/ws/chat";
   const token = localStorage.getItem("token") || "";
-  const ws = new WebSocket(`${url}?token=${token}`);
+  const ws = new WebSocket(url);
 
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ token }));
+  };
   ws.onmessage = (e) => {
     try { onMessage(JSON.parse(e.data)); } catch {}
   };

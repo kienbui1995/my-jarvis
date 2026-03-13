@@ -24,13 +24,15 @@ STREAM_NODES = {"agent_loop", "delegate", "executor", "synthesize"}
 
 
 async def _authenticate_ws(ws: WebSocket) -> str | None:
-    token = ws.query_params.get("token", "")
-    if not token:
-        return None
+    """Wait for first message with auth token instead of URL param."""
     try:
+        data = await ws.receive_json()
+        token = data.get("token", "")
+        if not token:
+            return None
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         return payload.get("sub")
-    except JWTError:
+    except (JWTError, Exception):
         return None
 
 

@@ -1,7 +1,7 @@
 .PHONY: dev prod dev-down prod-down logs build clean db-migrate db-upgrade
 
 DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
-PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
+PROD = docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml
 
 # --- Dev ---
 dev: ## Start dev (hot reload, exposed ports)

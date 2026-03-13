@@ -1,7 +1,7 @@
 """Auth endpoints — register, login, Google OAuth, refresh."""
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +17,25 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     name: str = ""
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, v: str) -> str:
+        import re
+        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Invalid email format")
+        return v.lower().strip()
+
+    @field_validator("password")
+    @classmethod
+    def strong_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        if not any(c.isalpha() for c in v):
+            raise ValueError("Password must contain at least one letter")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -109,15 +128,26 @@ class RefreshRequest(BaseModel):
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    """Exchange a valid refresh token for new access + refresh tokens."""
+    """Exchange a valid refresh token for new access + refresh tokens (one-time use)."""
     from jose import jwt as jose_jwt, JWTError
+    import core.redis as redis_pool
+
     try:
         payload = jose_jwt.decode(req.refresh_token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Not a refresh token")
         user_id = payload.get("sub")
+        jti = payload.get("jti", "")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    # Check if token was already used (rotation)
+    if jti:
+        redis = redis_pool.get()
+        used_key = f"rt:used:{jti}"
+        if await redis.get(used_key):
+            raise HTTPException(status_code=401, detail="Refresh token already used")
+        await redis.set(used_key, "1", ex=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()

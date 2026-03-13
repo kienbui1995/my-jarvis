@@ -32,6 +32,7 @@ export function Sidebar() {
           {label}
         </Link>
       ))}
+      <span className="mt-auto px-3 text-xs text-gray-600">v{process.env.APP_VERSION}</span>
     </aside>
   );
 }
