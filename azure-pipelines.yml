@@ -1,10 +1,10 @@
 trigger:
   branches:
-    include: [master]
+    include: [main]
 
 pr:
   branches:
-    include: [master]
+    include: [main]
 
 stages:
   - stage: CI
@@ -44,7 +44,7 @@ stages:
 
   - stage: Deploy
     dependsOn: CI
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: deploy
         displayName: Deploy to Production
@@ -58,6 +58,6 @@ stages:
               runOptions: inline
               inline: |
                 cd ~/my-jarvis
-                git pull origin master
+                git pull origin main
                 make build
                 make prod
