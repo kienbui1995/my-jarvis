@@ -27,7 +27,7 @@
 ### Bước 3: Config webhook
 1. Trong Zalo App → Webhook → thêm URL:
    ```
-   https://api.your-domain.com/api/v1/webhooks/zalo
+   https://jarvis.pmai.space/api/v1/webhooks/zalo
    ```
 2. Chọn events cần nhận:
    - `user_send_text` — tin nhắn text
@@ -102,7 +102,7 @@ async def zalo_login(req: ZaloLoginRequest, db: AsyncSession = Depends(get_db)):
 ### Zalo OA + Chatbot
 - [ ] Zalo OA đã tạo và verified
 - [ ] Zalo App đã tạo, liên kết OA
-- [ ] Webhook URL: `https://api.your-domain.com/api/v1/webhooks/zalo`
+- [ ] Webhook URL: `https://jarvis.pmai.space/api/v1/webhooks/zalo`
 - [ ] `ZALO_OA_ACCESS_TOKEN` và `ZALO_OA_SECRET_KEY` trong .env
 - [ ] Persistent menu đã set
 - [ ] Token refresh mechanism (OA token hết hạn sau 90 ngày)
@@ -110,7 +110,7 @@ async def zalo_login(req: ZaloLoginRequest, db: AsyncSession = Depends(get_db)):
 ### Zalo Bot Platform
 - [ ] Tạo bot qua Zalo Bot Manager (tìm OA "Zalo Bot Manager" trong Zalo)
 - [ ] Lấy Bot Token từ tin nhắn Zalo
-- [ ] Set webhook: gọi API `setWebhook` với URL `https://api.your-domain.com/api/v1/webhooks/zalo-bot`
+- [ ] Set webhook: gọi API `setWebhook` với URL `https://jarvis.pmai.space/api/v1/webhooks/zalo-bot`
 - [ ] `ZALO_BOT_TOKEN` và `ZALO_BOT_SECRET_TOKEN` trong .env
 - [ ] Test: nhắn tin cho bot → nhận phản hồi từ JARVIS
 

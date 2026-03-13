@@ -2,6 +2,38 @@
 
 ## [3.0.0] — 2026-03-12
 
+### Post-release (2026-03-13)
+
+#### Security Hardening
+- Untrack `.env.prod` from git, gitignore all `.env.*` files
+- Strong passwords for PostgreSQL, Redis, MinIO in production
+- Refresh token rotation (one-time use via Redis jti tracking)
+- WebSocket auth via first-message token (no longer in URL query param)
+- Telegram webhook: dedicated secret with `hmac.compare_digest`
+- Register: email validation + password strength (8+ chars, digit, letter)
+- Frontend Dockerfile: build args instead of hardcoded values
+- Git history cleaned of all secrets via `git filter-repo`
+
+#### Features
+- Piper TTS: Vietnamese voice (`vi_VN-vais1000-medium`) running in browser via WASM
+- Landing page with hero, 6 feature cards, demo conversation flow, CTA
+- Feedback buttons (👍👎) on AI messages
+- Sentry integration (backend + frontend error tracking)
+- LiteLLM Proxy: all LLM calls routed through unified proxy
+- Rate limiting redesign: split read (120rpm) / write (30rpm) limits
+
+#### Infrastructure
+- Azure Pipelines CI/CD (lint + build + deploy)
+- Cloudflare Tunnel (replaced Traefik)
+- `make prod` uses `--env-file .env.prod` for proper secret isolation
+- Removed unused Traefik config
+
+#### Bug Fixes
+- `column conversations.rolling_summary does not exist` — applied 3 Alembic migrations
+- `AsyncPostgresSaver` context manager fix + dead connection reconnect
+- `get_current_user` → `get_current_user_id` in feedback endpoint
+- `429 Too Many Requests` on `/users/me` — rate limit redesigned
+
 ### Intelligence Layer (11 modules)
 - **M1 Smart Router**: LLM-based intent classification, complexity detection, model selection, Redis cache 1h, keyword fallback
 - **M2 Conversation Memory**: SummaryBuffer (10 turns verbatim + rolling summary), Redis lock for race conditions

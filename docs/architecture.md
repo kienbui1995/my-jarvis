@@ -13,8 +13,8 @@
         │              │              │              │
         ▼              ▼              ▼              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    API GATEWAY (Traefik)                             │
-│                 Rate Limiting · SSL · Routing                       │
+│                    EDGE (Cloudflare Tunnel)                          │
+│                 SSL Termination · Routing · DDoS Protection         │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────────────┐
@@ -54,7 +54,7 @@
 │  │   Gateway     │  │   Service    │  │  Scheduler   │             │
 │  │              │  │              │  │              │             │
 │  │ Model Router │  │ Hot+Cold     │  │ Cron-based   │             │
-│  │ Cache Layer  │  │ Dual-layer   │  │ triggers     │             │
+│  │ LiteLLM Prx │  │ Dual-layer   │  │ triggers     │             │
 │  │ Budget Ctrl  │  │ pgvector     │  │ morning brief│             │
 │  └──────────────┘  └──────────────┘  └──────────────┘             │
 └─────────────────────────────────────────────────────────────────────┘
@@ -78,10 +78,10 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     EXTERNAL SERVICES                               │
 │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐          │
-│  │Gemini  │ │Claude  │ │DeepSeek│ │OpenAI  │ │Local   │          │
-│  │Flash   │ │Haiku/  │ │V3.2    │ │GPT-5   │ │Ollama  │          │
-│  │(cheap) │ │Sonnet  │ │(value) │ │(backup)│ │(future)│          │
-│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘          │
+│  │Gemini  │ │Claude  │ │DeepSeek│                               │
+│  │Flash   │ │Haiku/  │ │Chat    │    via LiteLLM Proxy          │
+│  │        │ │Sonnet  │ │        │    (http://litellm:4000)      │
+│  └────────┘ └────────┘ └────────┘                               │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -181,16 +181,18 @@ Each adapter handles: message normalization, attachment processing, response for
 |-------|-----------|-----|
 | **API** | FastAPI (Python 3.12) | Async, LangGraph ecosystem, fast |
 | **Agent** | LangGraph + LangMem | State machine + memory SDK |
-| **LLM** | Multi-provider (Gemini/Claude/DeepSeek) | Cost optimization, no lock-in |
+| **LLM** | LiteLLM Proxy → Gemini/Claude/DeepSeek | Unified API, cost tracking, no lock-in |
 | **Database** | PostgreSQL 16 + pgvector | Unified structured + vector |
 | **Cache** | Redis 7 | Sessions, rate limits, prompt cache |
 | **Storage** | MinIO | S3-compatible, self-hosted files |
-| **Frontend** | Next.js 15 + TypeScript + shadcn/ui | Dashboard, settings, analytics |
+| **Frontend** | Next.js 15 + TypeScript + Tailwind | Dashboard, settings, analytics |
+| **TTS** | Piper TTS (WASM, vi_VN-vais1000) | Offline Vietnamese voice in browser |
 | **State** | Zustand | Lightweight client state |
-| **Infra** | Docker Compose + Traefik | Easy dev + production |
+| **Infra** | Docker Compose + Cloudflare Tunnel | Easy dev + production |
 | **Migrations** | Alembic | PostgreSQL schema management |
 | **Task Queue** | Redis + ARQ | Async jobs (proactive, batch) |
-| **Monitoring** | Prometheus + Grafana | Metrics, cost tracking |
+| **Monitoring** | Sentry (backend + frontend) | Error tracking, performance |
+| **CI/CD** | Azure Pipelines | Lint, build, deploy |
 
 ## 4. Data Model
 
@@ -413,8 +415,8 @@ backend/
 ├── channels/
 │   ├── base.py                # Abstract channel adapter
 │   ├── zalo.py                # Zalo OA webhook + API
-│   ├── telegram.py            # Telegram Bot API
-│   └── web.py                 # WebSocket for web app
+│   ├── zalo_bot.py            # Zalo Bot Platform
+│   └── telegram.py            # Telegram Bot API
 ├── agent/
 │   ├── graph.py               # LangGraph StateGraph definition
 │   ├── state.py               # Agent state schema
@@ -431,14 +433,19 @@ backend/
 │       ├── finance_tools.py   # Expense, budget
 │       └── comms_tools.py     # Email draft
 ├── llm/
-│   ├── gateway.py             # Multi-provider LLM gateway
+│   ├── gateway.py             # LiteLLM Proxy client (ChatOpenAI)
 │   ├── router.py              # Smart model routing
 │   ├── cache.py               # Prompt caching layer
+│   ├── embeddings.py          # Embedding service
 │   └── budget.py              # Per-user budget tracking
 ├── memory/
 │   ├── service.py             # Memory service (hot + cold)
 │   ├── extraction.py          # Post-turn memory extraction
-│   └── context_builder.py     # Build context for LLM
+│   ├── context_builder.py     # Build context for LLM
+│   ├── conversation_memory.py # SummaryBuffer + rolling summary
+│   ├── consolidation.py       # LLM-based dedup (INSERT/UPDATE/DELETE)
+│   ├── preference_learning.py # Auto-extract user preferences
+│   └── knowledge_graph.py     # pgvector knowledge graph
 ├── services/
 │   ├── user.py                # User profile management
 │   ├── task.py                # Task business logic
@@ -465,13 +472,16 @@ backend/
 ```yaml
 # docker-compose.yml (simplified)
 services:
-  traefik:        # Reverse proxy, SSL, rate limiting
-  backend:        # FastAPI app
+  backend:        # FastAPI app (port 8000)
   worker:         # ARQ worker (proactive scheduler, async jobs)
-  frontend:       # Next.js web dashboard
+  frontend:       # Next.js web dashboard (port 3000)
   postgres:       # PostgreSQL 16 + pgvector
   redis:          # Cache, sessions, queue
   minio:          # File storage
+
+# External services (separate compose stacks):
+#   litellm-proxy  — LLM routing proxy (port 4000)
+#   cloudflared    — Cloudflare Tunnel (SSL + routing)
 ```
 
 ## 11. Security
@@ -480,9 +490,9 @@ services:
 |---------|----------|
 | Auth | JWT tokens (access + refresh), Zalo/TG user verification |
 | Data at rest | PostgreSQL encryption, MinIO server-side encryption |
-| Data in transit | TLS everywhere (Traefik handles SSL) |
-| LLM data | System prompt instructs: never leak user data across users |
-| Rate limiting | Redis-based per-user rate limits |
+| Data in transit | TLS everywhere (Cloudflare Tunnel handles SSL) |
+| LLM data | All calls via LiteLLM Proxy, system prompt instructs: never leak user data |
+| Rate limiting | Redis-based per-user rate limits (split read/write) |
 | Input sanitization | Validate all inputs, prevent prompt injection |
 | Secrets | Environment variables, never in code |
 | GDPR/VN data law | Data export, deletion API, consent tracking |
@@ -490,15 +500,17 @@ services:
 ## 12. Deployment Strategy
 
 ```
-Development          Staging              Production
-───────────          ───────              ──────────
-docker-compose       docker-compose       Docker on VPS
-local PostgreSQL     Cloud PostgreSQL      Cloud PostgreSQL
-local Redis          Cloud Redis           Cloud Redis
-ngrok (webhooks)     Real domain           Real domain + CDN
+Development          Production
+───────────          ──────────
+docker-compose       docker-compose + docker-compose.prod.yml
+local PostgreSQL     PostgreSQL (Docker volume)
+local Redis          Redis (Docker volume)
+ngrok (webhooks)     Cloudflare Tunnel (SSL + routing)
+.env                 .env.prod (strong passwords)
+Sentry (dev)         Sentry (production)
 
-Cost: $0             Cost: ~$30/mo         Cost: ~$50-100/mo
-                                           (scales with users)
+Cost: $0             Cost: ~$30-50/mo VPS
+                     (scales with users)
 ```
 
 MVP deployment target: **Single VPS** (4 vCPU, 8GB RAM, ~$30-50/mo) handles up to ~5,000 users.

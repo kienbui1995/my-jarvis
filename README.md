@@ -13,13 +13,16 @@ See [`docs/architecture.md`](docs/architecture.md) for full technical design.
 ```
 Zalo / Telegram / Web
         │
-   API Gateway (Traefik)
+   Cloudflare Tunnel (SSL + routing)
         │
-   FastAPI Backend
+   ┌────┴────┐
+   │ Next.js │ ← Frontend (port 3000)
+   │ FastAPI │ ← Backend  (port 8000)
+   └────┬────┘
         │
    LangGraph Agent ──► Tools (Tasks, Calendar, Finance, Memory, Web)
         │
-   LLM Gateway (Gemini / Claude / DeepSeek)
+   LiteLLM Proxy ──► Gemini / Claude / DeepSeek
         │
    PostgreSQL + pgvector │ Redis │ MinIO
 ```
@@ -36,15 +39,25 @@ make db-upgrade
 
 # Backend:  http://localhost:8000
 # Frontend: http://localhost:3000
-# MinIO:    http://localhost:9001
+```
+
+## Production Deploy
+
+```bash
+cp .env.example .env.prod
+# Fill in strong passwords + API keys
+
+make build
+make prod          # Uses .env.prod + docker-compose.prod.yml
 ```
 
 ## Commands
 
 ```bash
 make help          # Show all commands
-make up            # Start services
+make up            # Start dev services
 make down          # Stop services
+make prod          # Start production
 make logs s=backend # Tail logs
 make db-migrate m="description"  # Create migration
 make db-upgrade    # Apply migrations
@@ -57,12 +70,25 @@ make test          # Run tests
 ```
 my-jarvis/
 ├── backend/          # FastAPI + LangGraph
-├── frontend/         # Next.js dashboard
-├── docs/             # Architecture, ADRs
-├── infra/            # Traefik, Dockerfiles
-├── financial-model/  # Business projections
-└── pitch-deck/       # Investor materials
+├── frontend/         # Next.js 15 dashboard
+├── docs/             # Architecture, design specs
+├── infra/            # Cloudflare Tunnel config, backup script
+├── scripts/          # Setup scripts
+└── azure-pipelines.yml  # CI/CD
 ```
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js 15, Tailwind, Piper TTS (Vietnamese) |
+| Backend | FastAPI, LangGraph, Python 3.12 |
+| LLM | LiteLLM Proxy → Gemini, Claude, DeepSeek |
+| Database | PostgreSQL + pgvector, Redis |
+| Storage | MinIO (S3-compatible) |
+| Monitoring | Sentry (backend + frontend) |
+| Deploy | Docker Compose, Cloudflare Tunnel |
+| CI/CD | Azure Pipelines |
 
 ## License
 
