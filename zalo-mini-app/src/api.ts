@@ -46,10 +46,22 @@ export const api = {
       "/auth/zalo-miniapp", { method: "POST", body: JSON.stringify({ code }) }
     ),
   // Chat (HTTP, no WS)
-  chat: (content: string) =>
+  chat: (content: string, fileKey?: string) =>
     request<{ response: string; conversation_id: string }>(
-      "/chat", { method: "POST", body: JSON.stringify({ content }) }
+      "/chat", { method: "POST", body: JSON.stringify({ content, file_key: fileKey || null }) }
     ),
+  // File upload
+  uploadFile: async (blob: Blob, filename: string): Promise<{ key: string; url: string }> => {
+    const form = new FormData();
+    form.append("file", blob, filename);
+    const res = await fetch(`${API}/files/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${_token}` },
+      body: form,
+    });
+    if (!res.ok) throw new Error("Upload failed");
+    return res.json();
+  },
   // Voice
   transcribe: async (blob: Blob): Promise<string> => {
     const form = new FormData();

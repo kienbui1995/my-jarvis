@@ -6,6 +6,7 @@ from agent.tools.graph_tools import graph_search
 from agent.tools.memory_tools import memory_save, memory_search
 from agent.tools.news_tools import news_vn
 from agent.tools.task_tools import task_create, task_list, task_update
+from agent.tools.vision_tools import analyze_file, ocr_file
 from agent.tools.weather_tools import weather_vn
 from agent.tools.web_tools import summarize_url, web_search
 
@@ -20,4 +21,6 @@ all_tools = [
     weather_vn,
     news_vn,
     google_calendar_list, gmail_read, gmail_send,
+    # M17: Vision
+    analyze_file, ocr_file,
 ]

@@ -18,6 +18,7 @@ from api.v1 import voice
 from api.v1 import triggers
 from api.v1 import google_connect
 from api.v1 import chat
+from api.v1 import files
 
 from importlib.metadata import version as pkg_version
 
@@ -107,6 +108,7 @@ app.include_router(voice.router, prefix=f"{_v1}/voice", tags=["voice"])
 app.include_router(triggers.router, prefix=f"{_v1}/triggers", tags=["triggers"])
 app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"])
 app.include_router(chat.router, prefix=_v1, tags=["chat"])
+app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 
 
 @app.get("/health")

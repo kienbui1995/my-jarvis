@@ -25,6 +25,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     content: str
     conversation_id: str | None = None
+    file_key: str | None = None  # M17: attached file from /files/upload
 
 
 @router.post("/chat")
@@ -42,7 +43,13 @@ async def http_chat(
         raise HTTPException(401, "User not found")
 
     conv = await get_or_create_conversation(db, user.id, "zalo_mini_app")
-    await save_message(db, conv.id, "user", body.content)
+
+    # M17: If file attached, prepend file context to message
+    user_msg = body.content
+    if body.file_key:
+        user_msg = f"[Attached file: {body.file_key}]\n{body.content}"
+
+    await save_message(db, conv.id, "user", user_msg)
     history = await load_history(db, conv.id, limit=20)
     convo_ctx = await build_memory_context(conv.id, db)
     pref_ctx = await build_preference_prompt(user_id, db)
@@ -52,7 +59,7 @@ async def http_chat(
     config = {"configurable": {"thread_id": str(conv.id)}}
 
     result = await graph.ainvoke({
-        "messages": history + [HumanMessage(content=body.content)],
+        "messages": history + [HumanMessage(content=user_msg)],
         "user_id": user_id,
         "user_tier": user.tier,
         "channel": "zalo_mini_app",

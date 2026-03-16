@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Page, Box, Text, Input, Button, Icon } from "zmp-ui";
 import { api, getToken } from "../api";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; imageUrl?: string };
 
 const QUICK_ACTIONS = [
   { label: "Thời tiết", msg: "Thời tiết hôm nay ở Sài Gòn" },
@@ -20,7 +20,10 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [pendingFile, setPendingFile] = useState<{ key: string; url: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -30,17 +33,34 @@ export default function ChatPage() {
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
+    const fileKey = pendingFile?.key;
+    const imageUrl = pendingFile?.url;
     setInput("");
-    setMsgs((p) => [...p, { role: "user", content: text }]);
+    setPendingFile(null);
+    setMsgs((p) => [...p, { role: "user", content: text, imageUrl }]);
     setLoading(true);
     try {
-      const data = await api.chat(text);
+      const data = await api.chat(text, fileKey || undefined);
       setMsgs((p) => [...p, { role: "assistant", content: data.response }]);
     } catch {
       setMsgs((p) => [...p, { role: "assistant", content: "Lỗi kết nối, thử lại sau." }]);
     }
     setLoading(false);
-  }, [loading]);
+  }, [loading, pendingFile]);
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await api.uploadFile(file, file.name);
+      setPendingFile({ key: result.key, url: result.url, name: file.name });
+    } catch {
+      // Upload failed silently
+    }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }, []);
 
   // Voice recording
   const toggleRecord = useCallback(async () => {
@@ -121,6 +141,9 @@ export default function ChatPage() {
               background: m.role === "user" ? "#6C5CE7" : "#2d2d44",
               color: "#fff", borderRadius: 16, padding: "8px 14px", maxWidth: "80%",
             }}>
+              {m.imageUrl && (
+                <img src={m.imageUrl} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 6 }} />
+              )}
               <Text size="small" style={{ whiteSpace: "pre-wrap" }}>{m.content}</Text>
               {m.role === "assistant" && (
                 <Box style={{ marginTop: 4 }}>
@@ -140,8 +163,25 @@ export default function ChatPage() {
           <div ref={bottom} />
         </Box>
 
+        {/* Pending file indicator */}
+        {pendingFile && (
+          <Box flex style={{ padding: "4px 12px", gap: 8, alignItems: "center", background: "#2d2d44" }}>
+            <Text size="xxSmall" style={{ color: "#aaa", flex: 1 }}>📎 {pendingFile.name}</Text>
+            <Text size="xxSmall" style={{ color: "#f66", cursor: "pointer" }}
+              onClick={() => setPendingFile(null)}>✕</Text>
+          </Box>
+        )}
+
         {/* Input bar */}
+        <input ref={fileRef} type="file" accept="image/*,.pdf,.txt,.docx,.xlsx"
+          style={{ display: "none" }} onChange={handleFileSelect} />
         <Box flex style={{ padding: 8, gap: 8, borderTop: "1px solid #333", alignItems: "center" }}>
+          <Button size="small" variant="secondary"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading || loading}
+            style={{ borderRadius: "50%", width: 40, height: 40, padding: 0 }}>
+            {uploading ? "..." : "📎"}
+          </Button>
           <Button size="small" variant={recording ? "primary" : "secondary"}
             onClick={toggleRecord}
             disabled={transcribing || loading}
@@ -149,7 +189,7 @@ export default function ChatPage() {
             {transcribing ? "..." : recording ? "⏹" : "🎤"}
           </Button>
           <Input
-            placeholder={transcribing ? "Đang nhận dạng..." : "Nhập tin nhắn..."}
+            placeholder={transcribing ? "Đang nhận dạng..." : pendingFile ? "Hỏi về file..." : "Nhập tin nhắn..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e: any) => e.key === "Enter" && sendMessage(input)}
