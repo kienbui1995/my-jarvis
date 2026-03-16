@@ -1,5 +1,42 @@
 # Changelog
 
+## [4.0.0-alpha] — 2026-03-16
+
+### M12: Advanced Voice Pipeline
+- Backend STT via Gemini 2.0 Flash (`gemini-stt`) through LiteLLM Proxy
+- Backend TTS via Vertex AI Chirp3 HD (`vertex-tts`) through LiteLLM Proxy
+- `POST /api/v1/voice/transcribe` — audio upload → text transcription
+- `GET /api/v1/voice/speak` — text → streaming WAV audio (HTTP chunked)
+- Frontend: MediaRecorder-based recording → backend transcribe → fallback Web Speech API
+- Frontend: Backend TTS with Piper WASM fallback
+- Feature flag `VOICE_ENABLED`, 10MB upload limit, 2000 char TTS limit
+- 10 tests (4 unit + 6 API)
+
+### M16: Auto-TTS (Hands-free Voice Loop)
+- Voice mode toggle (headphones icon) in chat input
+- When ON: AI responses auto-play TTS → auto-start mic → transcribe → auto-send → loop
+- `useTTS(onEnd?)` callback for chaining TTS → STT
+- Auto-send STT results in voice mode (no manual send needed)
+
+### M14: Event-driven Proactive Engine
+- **Event Bus**: Redis Streams (`jarvis:events`), `emit()` from any endpoint/tool
+- **Trigger Engine**: `TriggerHandler` base class + `@register_handler` decorator pattern
+- **5 built-in triggers**:
+  - `deadline_approaching`: task due within N hours → notify (default 2h)
+  - `budget_exceeded`: daily spending exceeds threshold → alert (default 500K VND)
+  - `calendar_conflict`: overlapping events detected → ask user
+  - `memory_insight`: conversation patterns → LLM-generated proactive suggestions
+  - `morning_briefing`: daily summary (migrated from V3 cron to event-driven)
+- **CRUD API**: `POST/GET/PATCH/DELETE /api/v1/triggers` + `GET /types`
+- **Event emitters** wired into: task create/update, calendar create, expense_log, WS conversation end
+- ARQ worker: event consumer as background task + cron jobs emit into bus
+- Extensibility: new trigger = 1 file + `@register_handler`
+
+### V3 Codebase Review (16 fixes)
+- P0: prod backend/worker missing litellm-net network, webhook using non-checkpointed graph, refresh token UUID mismatch, webhook missing conversation_id
+- P1: webhook channels upgraded to full V3 features, WS auto-reconnect (exponential backoff), streaming state reset on disconnect
+- P2: embeddings through LiteLLM proxy, post_process fire-and-forget, checkpointer asyncio.Lock, injection blocking (score >= 0.8), datetime.utcnow → timezone-aware, cache_control immutable, MinIO healthcheck
+
 ## [3.0.0] — 2026-03-12
 
 ### Post-release (2026-03-13)
