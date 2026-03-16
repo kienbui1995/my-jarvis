@@ -32,3 +32,38 @@ class TestSTT:
             from voice.stt import transcribe
             with pytest.raises(Exception, match="API error"):
                 await transcribe(b"fake-audio", "test.webm")
+
+
+class TestTTS:
+    @pytest.mark.asyncio
+    async def test_speak_stream_yields_chunks(self):
+        mock_response = MagicMock()
+        mock_response.content = b"\x00" * 20000  # 20KB fake audio
+
+        with patch("voice.tts._client") as mock_client:
+            mock_client.audio.speech.create = AsyncMock(return_value=mock_response)
+
+            from voice.tts import speak_stream
+            chunks = []
+            async for chunk in speak_stream("xin chao", "vi-VN"):
+                chunks.append(chunk)
+
+            assert len(chunks) == 3  # 20000 / 8192 = 2.44 -> 3 chunks
+            assert b"".join(chunks) == b"\x00" * 20000
+            mock_client.audio.speech.create.assert_called_once_with(
+                model="vertex-tts",
+                input="xin chao",
+                voice="vi-VN",
+                response_format="wav",
+            )
+
+    @pytest.mark.asyncio
+    async def test_speak_stream_propagates_error(self):
+        with patch("voice.tts._client") as mock_client:
+            mock_client.audio.speech.create = AsyncMock(
+                side_effect=Exception("TTS error")
+            )
+            from voice.tts import speak_stream
+            with pytest.raises(Exception, match="TTS error"):
+                async for _ in speak_stream("hello"):
+                    pass
