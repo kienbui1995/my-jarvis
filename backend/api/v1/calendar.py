@@ -7,8 +7,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.deps import get_db, get_current_user_id
+from core.deps import get_current_user_id, get_db
 from db.models import CalendarEvent
+from services.event_bus import emit
 
 router = APIRouter()
 
@@ -33,4 +34,5 @@ async def create_event(req: EventCreate, user_id: str = Depends(get_current_user
     event = CalendarEvent(user_id=UUID(user_id), title=req.title, start_time=req.start_time, end_time=req.end_time, location=req.location)
     db.add(event)
     await db.commit()
+    await emit("calendar.created", user_id, {"event_id": str(event.id), "title": event.title})
     return {"id": str(event.id), "title": event.title}

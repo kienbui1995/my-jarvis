@@ -3,11 +3,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, update as sql_update, delete as sql_delete
+from sqlalchemy import delete as sql_delete
+from sqlalchemy import select
+from sqlalchemy import update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.deps import get_db, get_current_user_id
+from core.deps import get_current_user_id, get_db
 from db.models import Task
+from services.event_bus import emit
 
 router = APIRouter()
 
@@ -33,6 +36,7 @@ async def create_task(req: TaskCreate, user_id: str = Depends(get_current_user_i
     task = Task(user_id=UUID(user_id), title=req.title, description=req.description, priority=req.priority)
     db.add(task)
     await db.commit()
+    await emit("task.created", user_id, {"task_id": str(task.id), "title": task.title})
     return {"id": str(task.id), "title": task.title}
 
 
@@ -49,6 +53,7 @@ async def update_task(task_id: str, body: TaskUpdate, user_id: str = Depends(get
     if not result.first():
         raise HTTPException(404, "Task not found")
     await db.commit()
+    await emit("task.updated", user_id, {"task_id": task_id})
     return {"ok": True}
 
 

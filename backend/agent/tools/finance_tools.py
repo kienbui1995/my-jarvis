@@ -3,11 +3,12 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from langchain_core.tools import tool, InjectedToolArg
-from sqlalchemy import select, func
+from langchain_core.tools import InjectedToolArg, tool
+from sqlalchemy import func, select
 
 from db.models import Expense
 from db.session import async_session
+from services.event_bus import emit
 
 
 @tool
@@ -20,6 +21,7 @@ async def expense_log(
         e = Expense(user_id=UUID(user_id), amount=amount, category=category, description=description)
         db.add(e)
         await db.commit()
+        await emit("expense.created", user_id, {"amount": amount, "category": category})
         return f"💰 Đã ghi: {amount:,.0f}đ — {category}"
 
 

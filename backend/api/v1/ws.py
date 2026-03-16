@@ -9,13 +9,14 @@ from langgraph.types import Command
 
 from agent.graph import get_jarvis_graph
 from core.config import settings
-from db.models import User
-from db.session import async_session
-from services.conversation import get_or_create_conversation, save_message, load_history
-from memory.conversation_memory import summarize_if_needed, build_memory_context
-from memory.preference_learning import build_preference_prompt
 from core.rate_limit import check_ws_rate
 from core.supervision import SessionSupervisor
+from db.models import User
+from db.session import async_session
+from memory.conversation_memory import build_memory_context, summarize_if_needed
+from memory.preference_learning import build_preference_prompt
+from services.conversation import get_or_create_conversation, load_history, save_message
+from services.event_bus import emit
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -142,4 +143,5 @@ async def ws_chat(ws: WebSocket):
         logger.exception(f"WS error: {user_id}")
         await ws.close(1011)
     finally:
+        await emit("conversation.ended", user_id, {"conversation_id": str(conv_id)})
         await supervisor.stop()

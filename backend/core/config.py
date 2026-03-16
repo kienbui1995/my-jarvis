@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     VOICE_MAX_AUDIO_SIZE: int = 10 * 1024 * 1024  # 10MB
     VOICE_TTS_MAX_CHARS: int = 2000
 
+    # Proactive Engine (M14)
+    PROACTIVE_ENGINE_ENABLED: bool = True
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def validate_production(self) -> None:
