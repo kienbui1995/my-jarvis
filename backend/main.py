@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 import core.redis as redis_pool
 from api.v1 import (
+    agent_tasks,
     analytics,
     audit,
     auth,
@@ -120,6 +121,7 @@ app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"
 app.include_router(chat.router, prefix=_v1, tags=["chat"])
 app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
+app.include_router(agent_tasks.router, prefix=f"{_v1}/agent-tasks", tags=["agent-tasks"])
 
 
 @app.get("/health")

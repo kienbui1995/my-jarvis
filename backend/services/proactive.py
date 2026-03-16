@@ -69,6 +69,22 @@ async def cron_check_deadlines(ctx: dict):
             await emit("cron.check_deadlines", str(trigger.user_id), {})
 
 
+async def cron_scheduled_agents(ctx: dict):
+    """Emit scheduled agent events for all users."""
+    from sqlalchemy import select
+
+    from db.models import ProactiveTrigger
+    async with async_session() as db:
+        triggers = (await db.execute(
+            select(ProactiveTrigger).where(
+                ProactiveTrigger.trigger_type == "scheduled_agent",
+                ProactiveTrigger.enabled.is_(True),
+            )
+        )).scalars().all()
+        for trigger in triggers:
+            await emit("cron.scheduled_agent", str(trigger.user_id), {})
+
+
 # ── Event consumer background task ──────────────────────────
 
 async def _run_event_consumer(ctx: dict):
@@ -98,10 +114,13 @@ class WorkerSettings:
     )
 
     cron_jobs = [
-        cron(cron_morning_briefing, hour=1, minute=0),   # 08:00 VN (UTC+7)
+        cron(cron_morning_briefing, hour=1, minute=0),    # 08:00 VN (UTC+7)
         cron(cron_check_deadlines, hour=7, minute=0),
         cron(cron_check_deadlines, hour=13, minute=0),
         cron(cron_check_deadlines, hour=19, minute=0),
+        cron(cron_scheduled_agents, hour=1, minute=0),    # 08:00 VN
+        cron(cron_scheduled_agents, hour=5, minute=0),    # 12:00 VN
+        cron(cron_scheduled_agents, hour=11, minute=0),   # 18:00 VN
     ]
 
     @staticmethod

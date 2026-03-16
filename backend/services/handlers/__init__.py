@@ -5,4 +5,5 @@ from services.handlers import (  # noqa: F401
     deadline,
     memory_insight,
     morning_briefing,
+    scheduled_agent,
 )
