@@ -1,5 +1,25 @@
 # Changelog
 
+## [6.0.0] — 2026-03-16
+
+### Phase A: Deep Autonomy
+- **M33 Long-running Tasks**: background agent execution (30min timeout), progress tracking, cancel support. `POST/GET/DELETE /api/v1/agent-tasks`
+- **M34 Scheduled Agents**: new trigger type `scheduled_agent` — user-defined cron prompts ("mỗi sáng tóm tắt email"). Runs 3x/day
+- **M35 Multi-agent Collaboration**: parallel sub-agents via `asyncio.gather`, decompose → execute → aggregate pipeline
+- **M36 Agent Memory v2**: auto-maintained user profile (job, location, goals, hobbies, communication style), cross-session context
+
+### Phase B: Developer Ecosystem
+- **M37 Public API**: `/api/public/v1/` with API key auth (`X-API-Key`), endpoints: `POST /chat`, `GET /tools`, `POST /tools/:name/invoke`, `GET /memory/search`. `APIKey` DB model with request counting
+- **M38 Custom Tools SDK**: upload Python function, AST validation (block os/sys/subprocess), restricted builtins, 30s execution timeout. `CustomTool` DB model
+- **M39 Plugin Marketplace**: publish/browse/install custom tools, API key management (create/list/revoke). `POST/GET/DELETE /marketplace/tools`, `/api-keys`
+- **M40 Webhook Actions**: new trigger type `webhook_action` — call external URL on events, 3 retries with exponential backoff
+
+### Phase C: Retention & Engagement
+- **M41 Daily Habits**: habit tracker with streak counting, best streak, daily check-in. `Habit` + `HabitLog` DB models
+- **M43 Achievements**: 6 badges (first_chat, streak_7, streak_30, task_master, power_user, explorer), stats-based checking
+- **M44 Data Export**: full user data export as JSON (tasks, calendar, expenses, memories, conversations, preferences)
+- API: `POST/GET /habits`, `POST /habits/:id/check-in`, `GET /achievements`, `GET /export`
+
 ## [5.0.0] — 2026-03-16
 
 ### Phase A: Production Hardening
