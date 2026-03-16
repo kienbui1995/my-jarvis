@@ -32,6 +32,14 @@
 - ARQ worker: event consumer as background task + cron jobs emit into bus
 - Extensibility: new trigger = 1 file + `@register_handler`
 
+### M13: Zalo Mini App
+- **HTTP chat endpoint** `POST /api/v1/chat` — synchronous graph invocation for environments without WebSocket
+- **ZMP auth** `POST /auth/zalo-miniapp` — exchange Zalo Mini App access token for JWT via Zalo Graph API
+- **Chat page**: voice recording (MediaRecorder → backend STT), TTS playback on AI messages, 4 quick actions (weather, news, tasks, calendar)
+- **Tasks page**: inline task creation, toggle done/todo
+- **API client**: token auto-refresh, voice transcribe/speak helpers
+- 4 pages: Chat (voice-first), Tasks, Calendar, Notifications with bottom navigation
+
 ### M15: Vietnamese Service Integrations
 - **5 new agent tools** (13 → 18 total):
   - `weather_vn`: OpenWeather API, 15+ Vietnamese city aliases, formatted tiếng Việt
