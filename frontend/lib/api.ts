@@ -83,4 +83,10 @@ export const api = {
   },
   // Feedback
   submitFeedback: (messageId: string, rating: string) => request<{ ok: boolean }>("/feedback", { method: "POST", body: JSON.stringify({ message_id: messageId, rating }) }),
+  // Triggers
+  listTriggers: () => request<Array<{ id: string; trigger_type: string; config: Record<string, unknown>; enabled: boolean }>>("/triggers/"),
+  createTrigger: (trigger_type: string, config: Record<string, unknown> = {}) => request<{ id: string }>("/triggers/", { method: "POST", body: JSON.stringify({ trigger_type, config }) }),
+  updateTrigger: (id: string, data: { config?: Record<string, unknown>; enabled?: boolean }) => request<{ ok: boolean }>(`/triggers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  // Analytics (V5)
+  weeklyDigest: () => request<{ messages: number; tools_used: number; cost: number; top_tools: Array<{ name: string; count: number }> }>("/analytics/digest"),
 };

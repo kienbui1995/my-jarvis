@@ -2,18 +2,18 @@ import Link from "next/link";
 import { MessageSquare, Brain, Mic, Shield, Zap, Globe } from "lucide-react";
 
 const FEATURES = [
-  { icon: Brain, title: "11 module AI", desc: "Smart Router, Plan-and-Execute, Memory, Preference Learning..." },
-  { icon: MessageSquare, title: "Đa kênh", desc: "Zalo, Telegram, Web — trả lời mọi nơi" },
-  { icon: Mic, title: "Giọng nói tiếng Việt", desc: "Nói chuyện tự nhiên, nghe AI đọc câu trả lời" },
-  { icon: Zap, title: "13 công cụ", desc: "Tasks, lịch, tài chính, tìm kiếm web, knowledge graph" },
-  { icon: Shield, title: "An toàn", desc: "Hỏi xác nhận trước thao tác quan trọng, ghi log minh bạch" },
-  { icon: Globe, title: "Hiểu bạn", desc: "Nhớ sở thích, cá nhân hóa theo thời gian" },
+  { icon: Brain, title: "18 module AI", desc: "Smart Router, Plan-and-Execute, Memory, Vision, Voice, Proactive Engine..." },
+  { icon: MessageSquare, title: "Đa kênh", desc: "Zalo Mini App, Telegram, Web — trả lời mọi nơi" },
+  { icon: Mic, title: "Voice AI tiếng Việt", desc: "Nói chuyện tự nhiên, hands-free voice loop, tự động đọc trả lời" },
+  { icon: Zap, title: "24 công cụ", desc: "Tasks, lịch, email, thời tiết, tin tức, OCR, browse web, Google Calendar..." },
+  { icon: Shield, title: "Proactive & An toàn", desc: "Nhắc deadline, cảnh báo chi tiêu, phát hiện trùng lịch tự động" },
+  { icon: Globe, title: "Hiểu bạn", desc: "Nhớ sở thích, học hành vi, cá nhân hóa — dữ liệu thuộc về bạn" },
 ];
 
 const DEMO_STEPS = [
-  { user: "Nhắc tôi họp team lúc 3h chiều mai", ai: "Đã tạo lịch \"Họp team\" vào 3:00 PM ngày mai. Tôi sẽ nhắc bạn trước 15 phút 👍" },
-  { user: "Chi tiêu tháng này thế nào?", ai: "Tháng 3 bạn đã chi 4.2tr — ăn uống 1.8tr, di chuyển 800k, mua sắm 1.6tr. Giảm 12% so với tháng trước 📊" },
-  { user: "Tóm tắt bài viết này cho tôi", ai: "Bài viết nói về 5 xu hướng AI 2026: Agent AI, multimodal, on-device, AI coding, và AI governance. Điểm chính là..." },
+  { user: "🎤 Thời tiết Sài Gòn hôm nay?", ai: "🌤 Thời tiết Ho Chi Minh City: mưa nhỏ\n🌡 32°C (cảm giác 36°C) 💧 75% 💨 3.5 m/s" },
+  { user: "Tóm tắt tin tức hôm nay", ai: "📰 3 tin nổi bật: (1) VN GDP Q1 tăng 6.8%, (2) AI agent thay đổi cách làm việc, (3) Zalo cán mốc 80M users..." },
+  { user: "📎 [Ảnh hóa đơn] Ghi chi tiêu giúp tôi", ai: "📝 OCR: Cà phê Highlands 85,000đ\n💰 Đã ghi: 85,000đ — ăn uống. Hôm nay tổng chi: 350,000đ" },
 ];
 
 export default function LandingPage() {

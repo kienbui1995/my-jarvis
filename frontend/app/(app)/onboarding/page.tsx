@@ -31,7 +31,17 @@ export default function OnboardingPage() {
   const toggle = (id: string) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
 
   const finish = async () => {
-    try { await api.updateProfile({ name, preferences: { interests: selected } }); } catch {}
+    try {
+      await api.updateProfile({ name, preferences: { interests: selected } });
+      // Auto-create default proactive triggers
+      const defaultTriggers = [
+        { trigger_type: "morning_briefing", config: {} },
+        { trigger_type: "deadline_approaching", config: { hours_before: 2 } },
+      ];
+      for (const t of defaultTriggers) {
+        try { await api.createTrigger(t.trigger_type, t.config); } catch {}
+      }
+    } catch {}
     router.push("/chat");
   };
 

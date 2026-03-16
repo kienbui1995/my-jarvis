@@ -12,7 +12,8 @@
     { "path": "index", "name": "Chat" },
     { "path": "tasks", "name": "Tasks" },
     { "path": "calendar", "name": "Lịch" },
-    { "path": "notifications", "name": "Thông báo" }
+    { "path": "notifications", "name": "Thông báo" },
+    { "path": "privacy", "name": "Bảo mật" }
   ],
   "bottomNavigation": [
     { "path": "index", "icon": "chat", "label": "Chat" },

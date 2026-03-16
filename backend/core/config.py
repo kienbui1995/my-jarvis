@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Billing (M29)
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def validate_production(self) -> None:

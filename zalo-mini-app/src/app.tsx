@@ -10,6 +10,7 @@ import ChatPage from "./pages/index";
 import TasksPage from "./pages/tasks";
 import CalendarPage from "./pages/calendar";
 import NotificationsPage from "./pages/notifications";
+import PrivacyPage from "./pages/privacy";
 
 export default function MyApp() {
   const [ready, setReady] = useState(false);
@@ -60,6 +61,7 @@ export default function MyApp() {
           <TasksPage path="/tasks" />
           <CalendarPage path="/calendar" />
           <NotificationsPage path="/notifications" />
+          <PrivacyPage path="/privacy" />
         </ZMPRouter>
       </SnackbarProvider>
     </App>

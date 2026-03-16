@@ -12,6 +12,7 @@ from api.v1 import (
     analytics,
     audit,
     auth,
+    billing,
     calendar,
     chat,
     conversations,
@@ -118,6 +119,7 @@ app.include_router(triggers.router, prefix=f"{_v1}/triggers", tags=["triggers"])
 app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"])
 app.include_router(chat.router, prefix=_v1, tags=["chat"])
 app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
+app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
 
 
 @app.get("/health")

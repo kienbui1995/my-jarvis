@@ -1,13 +1,13 @@
-"""Analytics endpoints — usage stats, spending."""
+"""Analytics endpoints — usage stats, spending, digest."""
 from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import cast, Date, func, select
+from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.deps import get_current_user_id, get_db
-from db.models import LLMUsage, Expense
+from db.models import Expense, LLMUsage
 
 router = APIRouter()
 
@@ -52,4 +52,49 @@ async def get_weekly(user_id: str = Depends(get_current_user_id), db: AsyncSessi
         .group_by(cast(LLMUsage.created_at, Date))
         .order_by(cast(LLMUsage.created_at, Date))
     )).all()
-    return [{"date": r.date.isoformat(), "messages": r.messages, "cost": round(float(r.cost), 4)} for r in rows]
+    return [
+        {"date": r.date.isoformat(), "messages": r.messages, "cost": round(float(r.cost), 4)}
+        for r in rows
+    ]
+
+
+@router.get("/digest")
+async def get_digest(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Weekly digest — messages, top tools, cost summary."""
+    uid = UUID(user_id)
+    week_ago = datetime.utcnow() - timedelta(days=7)
+
+    # Total messages + cost
+    totals = (await db.execute(
+        select(
+            func.count().label("messages"),
+            func.coalesce(func.sum(LLMUsage.cost), 0).label("cost"),
+        ).where(LLMUsage.user_id == uid, LLMUsage.created_at >= week_ago)
+    )).one()
+
+    # Top tools used (by task_type field which stores intent)
+    tool_rows = (await db.execute(
+        select(
+            LLMUsage.task_type,
+            func.count().label("cnt"),
+        ).where(
+            LLMUsage.user_id == uid,
+            LLMUsage.created_at >= week_ago,
+            LLMUsage.task_type.isnot(None),
+            LLMUsage.task_type != "",
+        )
+        .group_by(LLMUsage.task_type)
+        .order_by(func.count().desc())
+        .limit(5)
+    )).all()
+
+    return {
+        "messages": totals.messages,
+        "cost": round(float(totals.cost), 4),
+        "top_tools": [
+            {"name": r.task_type, "count": r.cnt} for r in tool_rows
+        ],
+    }
