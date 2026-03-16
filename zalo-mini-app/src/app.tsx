@@ -13,26 +13,36 @@ import NotificationsPage from "./pages/notifications";
 
 export default function MyApp() {
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        // Get Zalo access token
         const { accessToken } = await getAccessToken({});
-        // Exchange for our JWT
-        const { access_token } = await api.zaloLogin(accessToken);
-        setToken(access_token);
+        const { access_token, refresh_token } = await api.zaloLogin(accessToken);
+        setToken(access_token, refresh_token);
         setReady(true);
       } catch {
-        // Fallback: request authorization
-        authorize({
-          scopes: ["scope.userInfo"],
-          success: () => window.location.reload(),
-          fail: () => {},
-        });
+        try {
+          authorize({
+            scopes: ["scope.userInfo"],
+            success: () => window.location.reload(),
+            fail: () => setError("Không thể đăng nhập Zalo"),
+          });
+        } catch {
+          setError("Không thể đăng nhập Zalo");
+        }
       }
     })();
   }, []);
+
+  if (error) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#f66", padding: 20, textAlign: "center" }}>
+        {error}
+      </div>
+    );
+  }
 
   if (!ready) {
     return (

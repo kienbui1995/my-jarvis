@@ -163,3 +163,46 @@ async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(str(user.id), user.tier),
         refresh_token=create_refresh_token(str(user.id)),
     )
+
+
+# --- Zalo Mini App auth ---
+
+class ZaloMiniAppAuthRequest(BaseModel):
+    code: str  # ZMP access token from getAccessToken()
+
+
+@router.post("/zalo-miniapp", response_model=TokenResponse)
+async def zalo_miniapp_auth(
+    req: ZaloMiniAppAuthRequest, db: AsyncSession = Depends(get_db),
+):
+    """Exchange Zalo Mini App access token for JWT."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            "https://graph.zalo.me/v2.0/me",
+            params={"fields": "id,name,picture"},
+            headers={"access_token": req.code},
+        )
+    if r.status_code != 200:
+        raise HTTPException(401, "Invalid Zalo token")
+
+    info = r.json()
+    zalo_id = info.get("id", "")
+    if not zalo_id:
+        raise HTTPException(401, "No Zalo user ID")
+
+    name = info.get("name", "")
+
+    result = await db.execute(select(User).where(User.zalo_id == zalo_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        user = User(zalo_id=zalo_id, name=name)
+        db.add(user)
+        await db.flush()
+        await _ensure_proactive_trigger(db, user.id)
+        await db.commit()
+        await db.refresh(user)
+
+    return TokenResponse(
+        access_token=create_access_token(str(user.id), user.tier),
+        refresh_token=create_refresh_token(str(user.id)),
+    )
