@@ -1,9 +1,11 @@
 """Tests for voice STT, TTS modules and API endpoints."""
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 # Ensure test settings are applied before any app import
 from core.config import settings
+
 settings.VOICE_ENABLED = True
 
 

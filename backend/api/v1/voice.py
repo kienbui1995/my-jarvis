@@ -1,5 +1,5 @@
 """Voice API — STT transcription and TTS streaming."""
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
 from core.config import settings
