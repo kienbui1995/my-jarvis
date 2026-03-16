@@ -1,25 +1,32 @@
-"""Webhook endpoints for Zalo OA, Zalo Bot Platform, and Telegram."""
+"""Webhook endpoints for Zalo, Telegram, WhatsApp, Slack, Discord."""
 import logging
 
-from fastapi import APIRouter, Request, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Query, Request
 from langchain_core.messages import HumanMessage
 
+from agent.graph import get_jarvis_graph
 from channels.base import ChannelAdapter, JarvisMessage, JarvisResponse
+from channels.discord import DiscordAdapter
+from channels.slack import SlackAdapter
+from channels.telegram import TelegramAdapter
+from channels.whatsapp import WhatsAppAdapter
 from channels.zalo import ZaloAdapter
 from channels.zalo_bot import ZaloBotAdapter
-from channels.telegram import TelegramAdapter
-from agent.graph import get_jarvis_graph
+from core.config import settings
 from db.session import async_session
-from services.user import get_or_create_user
-from services.conversation import get_or_create_conversation, save_message, load_history
-from memory.conversation_memory import summarize_if_needed, build_memory_context
+from memory.conversation_memory import build_memory_context, summarize_if_needed
 from memory.preference_learning import build_preference_prompt
+from services.conversation import get_or_create_conversation, load_history, save_message
+from services.user import get_or_create_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 zalo = ZaloAdapter()
 zalo_bot = ZaloBotAdapter()
 telegram = TelegramAdapter()
+whatsapp = WhatsAppAdapter()
+slack = SlackAdapter()
+discord = DiscordAdapter()
 
 
 def _resolve_user_kwargs(msg: JarvisMessage) -> dict:
@@ -31,6 +38,12 @@ def _resolve_user_kwargs(msg: JarvisMessage) -> dict:
         return {"zalo_bot_id": msg.user_id, "name": name}
     if msg.channel == "telegram":
         return {"telegram_id": msg.user_id, "name": name}
+    if msg.channel == "whatsapp":
+        return {"whatsapp_id": msg.user_id, "name": name}
+    if msg.channel == "slack":
+        return {"slack_id": msg.user_id, "name": name}
+    if msg.channel == "discord":
+        return {"discord_id": msg.user_id, "name": name}
     return {}
 
 
@@ -188,4 +201,77 @@ async def telegram_webhook(request: Request, bg: BackgroundTasks):
     msg = await telegram.parse_incoming(payload)
     if msg.content:
         bg.add_task(_process_message, telegram, msg)
+    return {"status": "ok"}
+
+
+# --- WhatsApp ---
+
+@router.get("/whatsapp")
+async def whatsapp_verify(
+    mode: str = Query("", alias="hub.mode"),
+    token: str = Query("", alias="hub.verify_token"),
+    challenge: str = Query("", alias="hub.challenge"),
+):
+    """WhatsApp webhook verification (GET)."""
+    if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        return int(challenge)
+    return {"error": "verification failed"}
+
+
+@router.post("/whatsapp")
+async def whatsapp_webhook(request: Request, bg: BackgroundTasks):
+    payload = await request.json()
+    if not await whatsapp.verify_webhook(payload, dict(request.headers)):
+        return {"error": "invalid signature"}
+    msg = await whatsapp.parse_incoming(payload)
+    if msg.content and msg.user_id:
+        bg.add_task(_process_message, whatsapp, msg)
+    return {"status": "ok"}
+
+
+# --- Slack ---
+
+@router.post("/slack")
+async def slack_webhook(request: Request, bg: BackgroundTasks):
+    payload = await request.json()
+
+    # Slack URL verification challenge
+    if payload.get("type") == "url_verification":
+        return {"challenge": payload.get("challenge", "")}
+
+    if not await slack.verify_webhook(payload, dict(request.headers)):
+        return {"error": "invalid signature"}
+
+    event = payload.get("event", {})
+    # Ignore bot messages to prevent loops
+    if event.get("bot_id") or event.get("subtype") == "bot_message":
+        return {"status": "ok"}
+
+    msg = await slack.parse_incoming(payload)
+    if msg.content and msg.user_id:
+        bg.add_task(_process_message, slack, msg)
+    return {"status": "ok"}
+
+
+# --- Discord ---
+
+@router.post("/discord")
+async def discord_webhook(request: Request, bg: BackgroundTasks):
+    payload = await request.json()
+    if not await discord.verify_webhook(payload, dict(request.headers)):
+        return {"error": "invalid signature"}
+
+    # Discord ping (type 1) — must respond with type 1
+    if payload.get("type") == 1:
+        return {"type": 1}
+
+    msg = await discord.parse_incoming(payload)
+    if msg.content and msg.user_id:
+        # For interactions, send deferred response first
+        if payload.get("token"):
+            await discord.send_interaction_response(
+                payload["id"], payload["token"],
+                "Đang suy nghĩ... 🤔",
+            )
+        bg.add_task(_process_message, discord, msg)
     return {"status": "ok"}

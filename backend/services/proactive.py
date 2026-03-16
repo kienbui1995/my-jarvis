@@ -26,6 +26,10 @@ async def _send_to_user(user: User, content: str, notif_type: str = "briefing"):
         db.add(Notification(user_id=user.id, type=notif_type, content=content))
         await db.commit()
 
+    from channels.discord import DiscordAdapter
+    from channels.slack import SlackAdapter
+    from channels.whatsapp import WhatsAppAdapter
+
     resp = JarvisResponse(content=content)
     if user.zalo_id:
         await zalo.send_response(user.zalo_id, resp)
@@ -33,6 +37,12 @@ async def _send_to_user(user: User, content: str, notif_type: str = "briefing"):
         await zalo_bot.send_response(user.zalo_bot_id, resp)
     if user.telegram_id:
         await telegram.send_response(user.telegram_id, resp)
+    if getattr(user, "whatsapp_id", None):
+        await WhatsAppAdapter().send_response(user.whatsapp_id, resp)
+    if getattr(user, "slack_id", None):
+        await SlackAdapter().send_response(user.slack_id, resp)
+    if getattr(user, "discord_id", None):
+        await DiscordAdapter().send_response(user.discord_id, resp)
 
 
 # ── Cron jobs that emit events into the bus ──────────────────

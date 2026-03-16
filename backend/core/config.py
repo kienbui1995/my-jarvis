@@ -87,6 +87,20 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # WhatsApp (V7)
+    WHATSAPP_TOKEN: str = ""
+    WHATSAPP_PHONE_ID: str = ""
+    WHATSAPP_WEBHOOK_SECRET: str = ""
+    WHATSAPP_VERIFY_TOKEN: str = ""
+
+    # Slack (V7)
+    SLACK_BOT_TOKEN: str = ""
+    SLACK_SIGNING_SECRET: str = ""
+
+    # Discord (V7)
+    DISCORD_BOT_TOKEN: str = ""
+    DISCORD_PUBLIC_KEY: str = ""
+
     # Billing (M29)
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
