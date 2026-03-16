@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     # Proactive Engine (M14)
     PROACTIVE_ENGINE_ENABLED: bool = True
 
+    # Integrations (M15)
+    OPENWEATHER_API_KEY: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def validate_production(self) -> None:

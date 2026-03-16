@@ -4,13 +4,13 @@ from db.models.user import User
 from db.models.conversation import Conversation, Message
 from db.models.productivity import Task, CalendarEvent, Expense
 from db.models.memory import Memory, KnowledgeEntity, KnowledgeRelation
-from db.models.system import LLMUsage, ProactiveTrigger, Notification, MCPServer
+from db.models.system import LLMUsage, ProactiveTrigger, Notification, MCPServer, GoogleOAuthToken
 from db.models.evidence import EvidenceLog
 from db.models.preference import UserPreference, UserPromptRule, UserToolPermission
 
 __all__ = [
     "Base", "User", "Conversation", "Message", "Task", "CalendarEvent", "Expense",
     "Memory", "KnowledgeEntity", "KnowledgeRelation",
-    "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer",
+    "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer", "GoogleOAuthToken",
     "EvidenceLog", "UserPreference", "UserPromptRule", "UserToolPermission",
 ]

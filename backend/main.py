@@ -16,6 +16,7 @@ from api.v1 import preferences
 from api.v1 import feedback
 from api.v1 import voice
 from api.v1 import triggers
+from api.v1 import google_connect
 
 from importlib.metadata import version as pkg_version
 
@@ -103,6 +104,7 @@ app.include_router(preferences.router, prefix=f"{_v1}/settings", tags=["preferen
 app.include_router(feedback.router, prefix=_v1, tags=["feedback"])
 app.include_router(voice.router, prefix=f"{_v1}/voice", tags=["voice"])
 app.include_router(triggers.router, prefix=f"{_v1}/triggers", tags=["triggers"])
+app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"])
 
 
 @app.get("/health")
