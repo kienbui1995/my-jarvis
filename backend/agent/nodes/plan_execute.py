@@ -22,17 +22,40 @@ MAX_REPLANS = 2
 HITL_STEP_THRESHOLD = 3
 DESTRUCTIVE_TOOLS = {"task_update", "expense_log", "calendar_create"}
 
+WORKFLOW_TEMPLATES = {
+    "research": {
+        "pattern": ["web_search", "summarize_url", "memory_save"],
+        "hint": "Tìm → đọc chi tiết → lưu kết quả",
+    },
+    "trip_planning": {
+        "pattern": ["web_search", "weather_vn", "calendar_create", "task_create"],
+        "hint": "Tìm info → check thời tiết → tạo lịch → tạo todo list",
+    },
+    "weekly_review": {
+        "pattern": ["task_list", "google_calendar_list", "budget_check", "memory_search"],
+        "hint": "Xem tasks → xem lịch → check chi tiêu → review insights",
+    },
+    "email_digest": {
+        "pattern": ["gmail_read", "news_vn", "memory_save"],
+        "hint": "Đọc email → đọc tin tức → lưu tóm tắt",
+    },
+}
+
 PLAN_PROMPT = """Bạn là planner cho AI assistant. Tạo kế hoạch thực hiện yêu cầu của user.
 
 Tools có sẵn: {tool_names}
+
+Workflow templates (dùng làm gợi ý nếu phù hợp):
+{workflow_hints}
 
 Trả về JSON (KHÔNG markdown):
 {{"steps": ["bước 1", "bước 2", ...], "reasoning": "giải thích ngắn"}}
 
 Rules:
 - Tối đa {max_steps} bước
-- Mỗi bước phải rõ ràng, actionable
-- Nếu yêu cầu đơn giản, chỉ cần 1-2 bước"""
+- Mỗi bước phải rõ ràng, actionable, nêu rõ tool cần dùng
+- Nếu yêu cầu đơn giản, chỉ cần 1-2 bước
+- Ưu tiên workflow template nếu khớp với yêu cầu"""
 
 EXECUTE_PROMPT = """Thực hiện bước sau trong kế hoạch. Dùng tools nếu cần.
 
@@ -64,9 +87,15 @@ async def planner_node(state: AgentState) -> dict:
     model = state.get("selected_model", "gemini-2.0-flash")
     tool_names = ", ".join(t.name for t in all_tools)
 
+    workflow_hints = "\n".join(
+        f"- {name}: {wf['hint']} (tools: {', '.join(wf['pattern'])})"
+        for name, wf in WORKFLOW_TEMPLATES.items()
+    )
+
     llm = get_llm(model)
     resp = await llm.ainvoke(PLAN_PROMPT.format(
         tool_names=tool_names, max_steps=MAX_STEPS,
+        workflow_hints=workflow_hints,
     ) + f"\n\nYêu cầu: {last_msg}")
 
     try:

@@ -16,6 +16,8 @@ Criteria:
 1. Có trả lời đúng câu hỏi không?
 2. Có chứa nội dung không phù hợp không?
 3. Response có bị cắt giữa chừng không?
+4. Tiếng Việt có tự nhiên không? (tránh dịch máy, xưng hô phù hợp)
+5. Có dùng tool khi nên dùng không? (hỏi thông tin thực tế mà trả lời chung → fail)
 
 User: {user_message}
 AI: {ai_response}"""
