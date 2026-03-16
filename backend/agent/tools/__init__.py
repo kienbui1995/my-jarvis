@@ -1,4 +1,5 @@
 """Tool registry — all tools available to the agent."""
+from agent.tools.browser_tools import browse_click, browse_fill, browse_screenshot, browse_web
 from agent.tools.calendar_tools import calendar_create, calendar_list
 from agent.tools.finance_tools import budget_check, expense_log
 from agent.tools.google_tools import gmail_read, gmail_send, google_calendar_list
@@ -23,4 +24,6 @@ all_tools = [
     google_calendar_list, gmail_read, gmail_send,
     # M17: Vision
     analyze_file, ocr_file,
+    # M18: Browser Automation
+    browse_web, browse_click, browse_fill, browse_screenshot,
 ]
