@@ -1,5 +1,27 @@
 # Changelog
 
+## [5.0.0] — 2026-03-16
+
+### Phase A: Production Hardening
+- **M19**: Alembic migration for `google_oauth_tokens` table
+- **M20**: Prod compose — backend memory 512M→1G for Playwright
+- **M21**: `/health/ready` deep health check (postgres, redis, minio, litellm)
+- **M22**: Per-endpoint rate limits (voice 5rpm, upload 10rpm, chat 20rpm), browser SSRF protection (URL allowlist, block internal IPs/metadata)
+- **M23**: Weather Redis cache (15min TTL)
+
+### Phase B: AI Quality
+- **M24 Smart Tool Selection**: keyword→tool mapping hints in system prompt, "always prefer tool" rule
+- **M25 RAG v2**: hybrid search (vector cosine + keyword ILIKE) with Reciprocal Rank Fusion (RRF k=60)
+- **M26 Agentic Workflows**: 4 workflow templates (research, trip_planning, weekly_review, email_digest) injected into planner
+- **M27 Vietnamese Prompt Tuning**: evaluate criteria expanded — Vietnamese naturalness check, tool usage validation
+
+### Phase C: Growth & Monetization
+- **M28 Onboarding**: auto-create default triggers (morning_briefing + deadline_approaching) on wizard completion
+- **M29 Billing**: Stripe checkout + webhook, 3 tiers (free $0, pro $5/mo, pro+ $15/mo), `GET /billing/plans`, `POST /billing/checkout`
+- **M30 Landing Page v2**: updated to 18 modules, 24 tools, voice + vision + proactive demos
+- **M31 Analytics Digest**: `GET /analytics/digest` — weekly summary (messages, cost, top tools)
+- **M32 Zalo Submission**: privacy policy page, app-config metadata, store listing ready
+
 ## [4.0.0] — 2026-03-16
 
 ### M12: Advanced Voice Pipeline
