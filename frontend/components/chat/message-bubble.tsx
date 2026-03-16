@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { Volume2, VolumeX, ThumbsUp, ThumbsDown, Loader2 } from "lucide-react";
-import { usePiperTTS } from "@/lib/hooks/use-piper-tts";
+import { useTTS } from "@/lib/hooks/use-voice";
 import { useState } from "react";
 import { api } from "@/lib/api";
 
@@ -51,7 +51,7 @@ function AiContent({ content }: { content: string }) {
 export function MessageBubble({ message, isGrouped }: { message: Message; isGrouped: boolean }) {
   const isUser = message.role === "user";
   const time = message.timestamp.toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit" });
-  const { speaking, loading, speak } = usePiperTTS();
+  const { speaking, loading, speak } = useTTS();
 
   return (
     <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start", isGrouped ? "mt-1" : "mt-5")}>

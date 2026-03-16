@@ -7,7 +7,7 @@ import { useSTT } from "@/lib/hooks/use-voice";
 export function ChatInput({ onSend, onStop, streaming }: { onSend: (msg: string) => void; onStop: () => void; streaming: boolean }) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { listening, toggle: toggleMic } = useSTT((text) => { setValue((v) => v ? v + " " + text : text); });
+  const { listening, transcribing, toggle: toggleMic } = useSTT((text) => { setValue((v) => v ? v + " " + text : text); });
 
   useEffect(() => {
     if (ref.current) {
@@ -46,8 +46,9 @@ export function ChatInput({ onSend, onStop, streaming }: { onSend: (msg: string)
         />
         <button
           onClick={toggleMic}
-          aria-label={listening ? "Dừng ghi âm" : "Nhập bằng giọng nói"}
-          className={cn("p-2.5 rounded-full transition-colors shrink-0", listening ? "bg-[var(--accent-red)] text-white animate-pulse" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}
+          disabled={transcribing}
+          aria-label={transcribing ? "Đang nhận dạng..." : listening ? "Dừng ghi âm" : "Nhập bằng giọng nói"}
+          className={cn("p-2.5 rounded-full transition-colors shrink-0", transcribing ? "text-[var(--brand-primary)] animate-pulse" : listening ? "bg-[var(--accent-red)] text-white animate-pulse" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}
         >
           {listening ? <MicOff size={18} /> : <Mic size={18} />}
         </button>
