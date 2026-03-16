@@ -52,6 +52,15 @@
 - **API endpoints**: `GET /google/auth-url`, `GET /google/callback`, `GET /google/status`, `DELETE /google/disconnect`
 - Config: `OPENWEATHER_API_KEY`, `GOOGLE_CLIENT_SECRET`
 
+### M17: File & Image Understanding
+- **File upload** `POST /api/v1/files/upload` — MinIO storage, supports images/PDF/docs (max 20MB)
+- **Vision module** `services/vision.py` — Gemini 2.0 Flash multimodal via LiteLLM proxy
+  - `analyze_image()`: general image analysis with custom prompts
+  - `ocr_document()`: text extraction from receipts, invoices, screenshots
+- **2 new agent tools** (18 → 20 total): `analyze_file`, `ocr_file`
+- **HTTP chat** accepts `file_key` for image-attached messages
+- **Mini App**: file attach button (📎), image preview in bubbles, pending file indicator
+
 ### V3 Codebase Review (16 fixes)
 - P0: prod backend/worker missing litellm-net network, webhook using non-checkpointed graph, refresh token UUID mismatch, webhook missing conversation_id
 - P1: webhook channels upgraded to full V3 features, WS auto-reconnect (exponential backoff), streaming state reset on disconnect
