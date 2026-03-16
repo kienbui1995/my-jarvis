@@ -95,7 +95,7 @@ class TestDeadlineHandler:
         db = AsyncMock()
         db.get = AsyncMock(return_value=mock_task)
 
-        event = {"type": "task.created", "payload": {"task_id": "some-uuid"}, "user_id": "u1"}
+        event = {"type": "task.created", "payload": {"task_id": "00000000-0000-0000-0000-000000000001"}, "user_id": "u1"}
         result = await handler.should_fire(event, trigger, db)
         assert result is True
 
@@ -116,7 +116,7 @@ class TestDeadlineHandler:
         db = AsyncMock()
         db.get = AsyncMock(return_value=mock_task)
 
-        event = {"type": "task.created", "payload": {"task_id": "some-uuid"}, "user_id": "u1"}
+        event = {"type": "task.created", "payload": {"task_id": "00000000-0000-0000-0000-000000000001"}, "user_id": "u1"}
         result = await handler.should_fire(event, trigger, db)
         assert result is False
 

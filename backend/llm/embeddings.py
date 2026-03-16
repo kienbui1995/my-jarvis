@@ -1,19 +1,19 @@
-"""Embedding generation — shared utility for vector operations via LiteLLM Proxy."""
-from langchain_openai import OpenAIEmbeddings
+"""Embedding generation — shared utility for vector operations."""
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from core.config import settings
 
 _embeddings = None
 
 
-def get_embeddings() -> OpenAIEmbeddings:
-    """Get or create embedding model routed through LiteLLM Proxy."""
+def get_embeddings() -> GoogleGenerativeAIEmbeddings:
+    """Get or create embedding model (direct Google API — embeddings don't route via LiteLLM)."""
     global _embeddings
     if _embeddings is None:
-        _embeddings = OpenAIEmbeddings(
-            model="gemini/text-embedding-004",
-            openai_api_key=settings.LITELLM_API_KEY,
-            openai_api_base=settings.LITELLM_BASE_URL,
+        _embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            google_api_key=settings.GOOGLE_API_KEY,
+            task_type="SEMANTIC_SIMILARITY",
         )
     return _embeddings
 
