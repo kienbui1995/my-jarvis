@@ -20,6 +20,7 @@ from api.v1 import (
     feedback,
     files,
     google_connect,
+    marketplace,
     mcp,
     notifications,
     preferences,
@@ -122,6 +123,12 @@ app.include_router(chat.router, prefix=_v1, tags=["chat"])
 app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
 app.include_router(agent_tasks.router, prefix=f"{_v1}/agent-tasks", tags=["agent-tasks"])
+app.include_router(marketplace.router, prefix=f"{_v1}/marketplace", tags=["marketplace"])
+
+# Public API (developer access via API keys)
+from api.public.routes import router as public_router
+
+app.include_router(public_router, prefix="/api/public/v1", tags=["public-api"])
 
 
 @app.get("/health")

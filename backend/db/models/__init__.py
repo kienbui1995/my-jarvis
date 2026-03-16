@@ -1,16 +1,25 @@
 """Re-export all models for backward compatibility: `from db.models import User, Task, ...`"""
 from db.models.base import Base
-from db.models.user import User
 from db.models.conversation import Conversation, Message
-from db.models.productivity import Task, CalendarEvent, Expense
-from db.models.memory import Memory, KnowledgeEntity, KnowledgeRelation
-from db.models.system import LLMUsage, ProactiveTrigger, Notification, MCPServer, GoogleOAuthToken
 from db.models.evidence import EvidenceLog
+from db.models.memory import KnowledgeEntity, KnowledgeRelation, Memory
 from db.models.preference import UserPreference, UserPromptRule, UserToolPermission
+from db.models.productivity import CalendarEvent, Expense, Task
+from db.models.system import (
+    APIKey,
+    CustomTool,
+    GoogleOAuthToken,
+    LLMUsage,
+    MCPServer,
+    Notification,
+    ProactiveTrigger,
+)
+from db.models.user import User
 
 __all__ = [
     "Base", "User", "Conversation", "Message", "Task", "CalendarEvent", "Expense",
     "Memory", "KnowledgeEntity", "KnowledgeRelation",
-    "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer", "GoogleOAuthToken",
+    "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer",
+    "GoogleOAuthToken", "APIKey", "CustomTool",
     "EvidenceLog", "UserPreference", "UserPromptRule", "UserToolPermission",
 ]

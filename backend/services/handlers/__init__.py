@@ -6,4 +6,5 @@ from services.handlers import (  # noqa: F401
     memory_insight,
     morning_briefing,
     scheduled_agent,
+    webhook_action,
 )
