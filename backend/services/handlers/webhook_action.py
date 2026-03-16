@@ -29,10 +29,16 @@ class WebhookActionHandler(TriggerHandler):
 
     async def build_message(self, event: dict, trigger: ProactiveTrigger, db: AsyncSession) -> str:
         """Call webhook URL with event data. Returns empty (no user notification)."""
+        from services.browser import _validate_url
+
         config = trigger.config or {}
         url = config.get("url", "")
         method = config.get("method", "POST").upper()
         headers = config.get("headers", {})
+
+        if _validate_url(url):
+            logger.warning(f"Webhook URL blocked (SSRF): {url}")
+            return ""
 
         payload = {
             "event_type": event["type"],

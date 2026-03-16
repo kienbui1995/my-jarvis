@@ -128,7 +128,8 @@ app.include_router(marketplace.router, prefix=f"{_v1}/marketplace", tags=["marke
 app.include_router(engagement.router, prefix=_v1, tags=["engagement"])
 
 # Public API (developer access via API keys)
-from api.public.routes import router as public_router
+# Import here to avoid circular deps (public routes import agent graph)
+from api.public.routes import router as public_router  # noqa: E402
 
 app.include_router(public_router, prefix="/api/public/v1", tags=["public-api"])
 

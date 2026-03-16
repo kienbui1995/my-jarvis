@@ -57,15 +57,25 @@ async def execute_custom_tool(
     """Execute custom tool code in restricted scope."""
     import asyncio
 
+    ALLOWED_MODULES = {
+        "json", "re", "math", "datetime",
+        "urllib.parse", "hashlib", "base64", "httpx",
+    }
+
+    def _safe_import(name, *args, **kwargs):
+        if name.split(".")[0] not in ALLOWED_MODULES:
+            raise ImportError(f"Import not allowed: {name}")
+        return __import__(name, *args, **kwargs)
+
     namespace = {"__builtins__": {
         "str": str, "int": int, "float": float, "bool": bool,
         "list": list, "dict": dict, "len": len, "range": range,
-        "print": lambda *a: None,  # no-op print
+        "print": lambda *a: None,
         "isinstance": isinstance, "enumerate": enumerate,
         "zip": zip, "map": map, "filter": filter,
         "min": min, "max": max, "sum": sum, "abs": abs, "round": round,
         "sorted": sorted, "reversed": reversed,
-        "__import__": __import__,  # needed for allowed imports
+        "__import__": _safe_import,
     }}
 
     try:

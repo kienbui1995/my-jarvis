@@ -25,6 +25,8 @@ ENDPOINT_LIMITS = {
     "/api/v1/voice/transcribe": 5,
     "/api/v1/voice/speak": 10,
     "/api/v1/files/upload": 10,
+    "/api/public/v1/chat": 10,
+    "/api/public/v1/tools": 30,
     "/api/v1/chat": 20,
 }
 
