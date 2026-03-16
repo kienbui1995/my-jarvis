@@ -86,10 +86,12 @@ export function useSTT(onResult: (text: string) => void) {
 
 // --- TTS: backend /voice/speak → fallback Piper WASM ---
 
-export function useTTS() {
+export function useTTS(onEnd?: () => void) {
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
 
   const speak = useCallback(async (text: string) => {
     if (speaking) {
@@ -100,6 +102,12 @@ export function useTTS() {
 
     const clean = text.replace(/[#*`>\[\]()!_~|]/g, "").replace(/\n+/g, ". ").trim();
     if (!clean) return;
+
+    const handleEnded = (url: string) => () => {
+      setSpeaking(false);
+      URL.revokeObjectURL(url);
+      onEndRef.current?.();
+    };
 
     setLoading(true);
     try {
@@ -112,7 +120,7 @@ export function useTTS() {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
-      audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+      audio.onended = handleEnded(url);
       audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); };
       setSpeaking(true);
       setLoading(false);
@@ -126,7 +134,7 @@ export function useTTS() {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audioRef.current = audio;
-        audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+        audio.onended = handleEnded(url);
         audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); };
         setSpeaking(true);
         await audio.play();

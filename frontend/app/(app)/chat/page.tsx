@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useChat } from "@/lib/stores/chat";
 import { createWSClient, type WSMessage, type ApprovalRequest } from "@/lib/ws";
+import { useTTS } from "@/lib/hooks/use-voice";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { ChatInput } from "@/components/chat/chat-input";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
@@ -18,6 +19,15 @@ export default function ChatPage() {
   const pendingRef = useRef(false);
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [planProgress, setPlanProgress] = useState<{ current: number; total: number; description: string } | null>(null);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+  const autoListenRef = useRef<(() => void) | null>(null);
+  const { speak: ttsSpeak } = useTTS(() => {
+    // onEnd callback: auto-listen after TTS finishes in voice mode
+    if (voiceModeRef.current) autoListenRef.current?.();
+  });
+
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, planProgress]);
 
@@ -33,6 +43,7 @@ export default function ChatPage() {
         finishStreaming(msg.content);
         pendingRef.current = false;
         setPlanProgress(null);
+        if (voiceModeRef.current && msg.content) ttsSpeak(msg.content);
       } else if (msg.type === "approval_request") {
         setApproval(msg);
       } else if (msg.type === "plan_progress") {
@@ -105,7 +116,7 @@ export default function ChatPage() {
           {streaming && <TypingIndicator />}
         </div>
         {planProgress && <PlanProgress {...planProgress} />}
-        <ChatInput onSend={send} onStop={() => {}} streaming={streaming} />
+        <ChatInput onSend={send} onStop={() => {}} streaming={streaming} voiceMode={voiceMode} onToggleVoiceMode={() => setVoiceMode(v => !v)} autoListenRef={autoListenRef} />
       </div>
 
       <ApprovalDialog request={approval} onApprove={() => handleApproval(true)} onReject={() => handleApproval(false)} />

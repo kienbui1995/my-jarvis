@@ -1,13 +1,37 @@
 "use client";
-import { useRef, useState, useEffect, KeyboardEvent } from "react";
-import { Send, Square, Paperclip, Mic, MicOff } from "lucide-react";
+import { useRef, useState, useEffect, KeyboardEvent, MutableRefObject } from "react";
+import { Send, Square, Paperclip, Mic, MicOff, Headphones } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSTT } from "@/lib/hooks/use-voice";
 
-export function ChatInput({ onSend, onStop, streaming }: { onSend: (msg: string) => void; onStop: () => void; streaming: boolean }) {
+type ChatInputProps = {
+  onSend: (msg: string) => void;
+  onStop: () => void;
+  streaming: boolean;
+  voiceMode?: boolean;
+  onToggleVoiceMode?: () => void;
+  autoListenRef?: MutableRefObject<(() => void) | null>;
+};
+
+export function ChatInput({ onSend, onStop, streaming, voiceMode, onToggleVoiceMode, autoListenRef }: ChatInputProps) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { listening, transcribing, toggle: toggleMic } = useSTT((text) => { setValue((v) => v ? v + " " + text : text); });
+
+  const onSTTResult = (text: string) => {
+    if (voiceMode) {
+      // Voice mode: auto-send transcribed text
+      if (text.trim()) onSend(text.trim());
+    } else {
+      setValue((v) => v ? v + " " + text : text);
+    }
+  };
+
+  const { listening, transcribing, toggle: toggleMic } = useSTT(onSTTResult);
+
+  // Expose toggleMic for auto-listen after TTS ends
+  useEffect(() => {
+    if (autoListenRef) autoListenRef.current = toggleMic;
+  }, [autoListenRef, toggleMic]);
 
   useEffect(() => {
     if (ref.current) {
@@ -40,10 +64,17 @@ export function ChatInput({ onSend, onStop, streaming }: { onSend: (msg: string)
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKey}
           aria-label="Nhập tin nhắn"
-          placeholder="Nhập tin nhắn cho JARVIS..."
+          placeholder={voiceMode ? "Voice mode - nói để chat..." : "Nhập tin nhắn cho JARVIS..."}
           rows={1}
           className="flex-1 bg-[var(--bg-tertiary)] border border-[var(--border-default)] rounded-[1.25rem] px-4 py-2.5 text-base text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] resize-none focus:outline-none focus:border-[var(--border-focus)] transition-colors"
         />
+        <button
+          onClick={onToggleVoiceMode}
+          aria-label={voiceMode ? "Tắt voice mode" : "Bật voice mode"}
+          className={cn("p-2.5 rounded-full transition-colors shrink-0", voiceMode ? "bg-[var(--brand-primary)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}
+        >
+          <Headphones size={18} />
+        </button>
         <button
           onClick={toggleMic}
           disabled={transcribing}
