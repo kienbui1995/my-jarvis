@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     SUPERVISION_ENABLED: bool = True
     TOOL_PERMISSIONS_ENABLED: bool = True
 
+    # Voice (M12)
+    VOICE_ENABLED: bool = True
+    VOICE_MAX_AUDIO_SIZE: int = 10 * 1024 * 1024  # 10MB
+    VOICE_TTS_MAX_CHARS: int = 2000
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def validate_production(self) -> None:
