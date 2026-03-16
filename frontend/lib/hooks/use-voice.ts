@@ -1,67 +1,145 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
 
-// --- STT ---
-type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+function getAuthHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// --- STT: MediaRecorder → backend /voice/transcribe → fallback Web Speech API ---
 
 export function useSTT(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
-  const recRef = useRef<any>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
-  const toggle = useCallback(() => {
-    if (listening) { recRef.current?.stop(); return; }
-
+  const fallbackWebSpeech = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert("Trình duyệt không hỗ trợ nhận diện giọng nói"); return; }
-
+    if (!SR) return;
     const rec = new SR();
     rec.lang = "vi-VN";
     rec.interimResults = false;
     rec.continuous = false;
-    rec.onresult = (e: any) => { onResult(e.results[0][0].transcript); };
+    rec.onresult = (e: any) => onResult(e.results[0][0].transcript);
     rec.onend = () => setListening(false);
     rec.onerror = () => setListening(false);
-    recRef.current = rec;
     rec.start();
     setListening(true);
-  }, [listening, onResult]);
+  }, [onResult]);
 
-  return { listening, toggle };
+  const sendToBackend = useCallback(async (blob: Blob) => {
+    setTranscribing(true);
+    try {
+      const form = new FormData();
+      form.append("audio", blob, "recording.webm");
+      const res = await fetch(`${API}/voice/transcribe`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.text) onResult(data.text);
+    } catch {
+      // Fallback: re-record with Web Speech API
+      fallbackWebSpeech();
+    } finally {
+      setTranscribing(false);
+    }
+  }, [onResult, fallbackWebSpeech]);
+
+  const toggle = useCallback(async () => {
+    if (listening) {
+      recorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setListening(false);
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        if (blob.size > 0) sendToBackend(blob);
+      };
+
+      recorderRef.current = recorder;
+      recorder.start();
+      setListening(true);
+    } catch {
+      // MediaRecorder not available — fallback to Web Speech API
+      fallbackWebSpeech();
+    }
+  }, [listening, sendToBackend, fallbackWebSpeech]);
+
+  return { listening, transcribing, toggle };
 }
 
-// --- TTS ---
-let _voices: SpeechSynthesisVoice[] = [];
-if (typeof window !== "undefined" && window.speechSynthesis) {
-  _voices = speechSynthesis.getVoices();
-  speechSynthesis.onvoiceschanged = () => { _voices = speechSynthesis.getVoices(); };
-}
-
-function getViVoice(): SpeechSynthesisVoice | null {
-  return _voices.find(v => v.lang === "vi-VN")
-    || _voices.find(v => v.lang.startsWith("vi"))
-    || null;
-}
+// --- TTS: backend /voice/speak → fallback Piper WASM ---
 
 export function useTTS() {
   const [speaking, setSpeaking] = useState(false);
-  const uttRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [loading, setLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback((text: string) => {
-    if (speaking) { speechSynthesis.cancel(); setSpeaking(false); return; }
-    const clean = text.replace(/[#*`>\[\]()!_~|]/g, "").replace(/\n+/g, ". ");
-    const utt = new SpeechSynthesisUtterance(clean);
-    const viVoice = getViVoice();
-    if (viVoice) { utt.voice = viVoice; utt.lang = viVoice.lang; }
-    else { utt.lang = "vi-VN"; }
-    utt.rate = 1.05;
-    utt.onend = () => setSpeaking(false);
-    utt.onerror = () => setSpeaking(false);
-    uttRef.current = utt;
-    setSpeaking(true);
-    speechSynthesis.speak(utt);
+  const speak = useCallback(async (text: string) => {
+    if (speaking) {
+      audioRef.current?.pause();
+      setSpeaking(false);
+      return;
+    }
+
+    const clean = text.replace(/[#*`>\[\]()!_~|]/g, "").replace(/\n+/g, ". ").trim();
+    if (!clean) return;
+
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ text: clean.slice(0, 2000), voice: "vi-VN" });
+      const res = await fetch(`${API}/voice/speak?${params}`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+      setSpeaking(true);
+      setLoading(false);
+      await audio.play();
+    } catch {
+      // Fallback to Piper WASM TTS
+      setLoading(false);
+      try {
+        const { predict } = await import("@mintplex-labs/piper-tts-web");
+        const blob = await predict({ voiceId: "vi_VN-vais1000-medium", text: clean });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+        audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); };
+        setSpeaking(true);
+        await audio.play();
+      } catch {
+        setSpeaking(false);
+      }
+    }
   }, [speaking]);
 
-  const stop = useCallback(() => { speechSynthesis.cancel(); setSpeaking(false); }, []);
+  const stop = useCallback(() => {
+    audioRef.current?.pause();
+    setSpeaking(false);
+  }, []);
 
-  return { speaking, speak, stop };
+  return { speaking, loading, speak, stop };
 }
