@@ -1,4 +1,5 @@
-"""Post-process node — memory extraction + usage logging (async, non-blocking)."""
+"""Post-process node — memory extraction + usage logging (fire-and-forget background tasks)."""
+import asyncio
 import logging
 from uuid import UUID
 
@@ -28,11 +29,29 @@ def _estimate_cost(model: str, messages: list) -> tuple[int, int, float]:
     return input_tokens, output_tokens, cost
 
 
+async def _background_extract(messages: list, user_id: str) -> None:
+    """Fire-and-forget: extract memories, KG, and preferences in background."""
+    try:
+        await extract_memories(messages, user_id=user_id)
+    except Exception:
+        logger.debug("Background memory extraction failed", exc_info=True)
+    try:
+        await extract_kg(messages, user_id)
+    except Exception:
+        logger.debug("Background KG extraction failed", exc_info=True)
+    try:
+        from memory.preference_learning import extract_preferences
+        async with async_session() as db:
+            await extract_preferences(messages, user_id, db)
+    except Exception:
+        logger.debug("Background preference extraction failed", exc_info=True)
+
+
 async def post_process_node(state: AgentState) -> dict:
     user_id = state.get("user_id", "")
     model = state.get("selected_model", "")
 
-    # 1. Log usage + record spend
+    # 1. Log usage + record spend (fast, always awaited)
     try:
         input_t, output_t, cost = _estimate_cost(model, state["messages"])
         if user_id and cost > 0:
@@ -47,21 +66,8 @@ async def post_process_node(state: AgentState) -> dict:
     except Exception:
         logger.exception("Failed to log usage")
 
-    # 2. Extract memories (async, best-effort)
-    try:
-        if user_id and len(state["messages"]) >= 2:
-            await extract_memories(state["messages"], user_id=user_id)
-            await extract_kg(state["messages"], user_id)
-    except Exception:
-        logger.exception("Failed to extract memories")
-
-    # 3. M5: Extract user preferences
-    try:
-        if user_id and len(state["messages"]) >= 2:
-            from memory.preference_learning import extract_preferences
-            async with async_session() as db:
-                await extract_preferences(state["messages"], user_id, db)
-    except Exception:
-        logger.exception("Failed to extract preferences")
+    # 2. Extract memories + KG + preferences (fire-and-forget, 3 LLM calls in background)
+    if user_id and len(state["messages"]) >= 2:
+        asyncio.create_task(_background_extract(list(state["messages"]), user_id))
 
     return {}

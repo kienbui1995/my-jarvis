@@ -44,7 +44,14 @@ export default function ChatPage() {
       }
     };
     wsRef.current?.close();
-    wsRef.current = createWSClient(onMsg, () => { wsRef.current = null; });
+    wsRef.current = createWSClient(onMsg, () => {
+      wsRef.current = null;
+      if (pendingRef.current) {
+        finishStreaming("Mất kết nối. Vui lòng thử lại.");
+        pendingRef.current = false;
+        setPlanProgress(null);
+      }
+    });
     return () => { wsRef.current?.close(); };
   }, [activeConvId]);
 

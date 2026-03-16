@@ -36,6 +36,10 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      retries: 5
     deploy:
       resources:
         limits: { memory: 1G }
@@ -70,6 +74,9 @@ services:
       redis:
         condition: service_healthy
     command: arq services.proactive.WorkerSettings
+    networks:
+      - default
+      - litellm-net
     deploy:
       resources:
         limits: { memory: 3G }

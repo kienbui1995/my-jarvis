@@ -1,4 +1,4 @@
-"""Prompt injection detection — regex scanner, detection-only (never blocks)."""
+"""Prompt injection detection — regex scanner, high-confidence blocks."""
 import re
 
 _PATTERNS = [
@@ -11,6 +11,9 @@ _PATTERNS = [
 ]
 _COMPILED = [(re.compile(p, re.IGNORECASE), s) for p, s in _PATTERNS]
 
+# Score at or above this threshold will cause the request to be blocked
+BLOCK_THRESHOLD = 0.8
+
 
 def scan_injection(text: str) -> tuple[float, str | None]:
     """Scan text for injection patterns. Returns (score 0-1, matched_pattern or None)."""
@@ -18,3 +21,8 @@ def scan_injection(text: str) -> tuple[float, str | None]:
         if pattern.search(text):
             return score, pattern.pattern
     return 0.0, None
+
+
+def should_block(score: float) -> bool:
+    """Return True if injection score is high enough to block the request."""
+    return score >= BLOCK_THRESHOLD

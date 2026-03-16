@@ -8,10 +8,12 @@ from channels.base import ChannelAdapter, JarvisMessage, JarvisResponse
 from channels.zalo import ZaloAdapter
 from channels.zalo_bot import ZaloBotAdapter
 from channels.telegram import TelegramAdapter
-from agent.graph import jarvis_graph
+from agent.graph import get_jarvis_graph
 from db.session import async_session
 from services.user import get_or_create_user
 from services.conversation import get_or_create_conversation, save_message, load_history
+from memory.conversation_memory import summarize_if_needed, build_memory_context
+from memory.preference_learning import build_preference_prompt
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -86,20 +88,28 @@ async def _process_message(adapter: ChannelAdapter, msg: JarvisMessage) -> None:
                 return
             conv = await get_or_create_conversation(db, user.id, msg.channel)
             await save_message(db, conv.id, "user", msg.content)
-            history = await load_history(db, conv.id, limit=10)
+            history = await load_history(db, conv.id, limit=20)
+            convo_ctx = await build_memory_context(conv.id, db)
+            pref_ctx = await build_preference_prompt(str(user.id), db)
 
-        result = await jarvis_graph.ainvoke({
+        graph = await get_jarvis_graph()
+        user_pref_combined = "\n".join(filter(None, [pref_ctx, convo_ctx]))
+        config = {"configurable": {"thread_id": str(conv.id)}}
+        result = await graph.ainvoke({
             "messages": history + [HumanMessage(content=msg.content)],
             "user_id": str(user.id),
             "user_tier": user.tier,
             "channel": msg.channel,
-        })
+            "conversation_id": str(conv.id),
+            "user_preferences": user_pref_combined,
+        }, config=config)
 
         response_text = result.get("final_response", "Xin lỗi, tôi không thể xử lý yêu cầu này.")
 
         async with async_session() as db:
             await save_message(db, conv.id, "assistant", response_text,
                                model_used=result.get("selected_model", ""))
+            await summarize_if_needed(conv.id, db)
 
         # Reply to chat_id for channels that support group chat
         recipient = msg.metadata.get("chat_id") or msg.user_id

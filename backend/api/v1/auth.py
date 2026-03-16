@@ -149,7 +149,12 @@ async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=401, detail="Refresh token already used")
         await redis.set(used_key, "1", ex=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    from uuid import UUID
+    try:
+        uid = UUID(user_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID")
+    result = await db.execute(select(User).where(User.id == uid))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")

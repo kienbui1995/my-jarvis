@@ -1,6 +1,5 @@
 """Smart model router — classify complexity and select optimal model."""
 from core.config import settings
-from llm.gateway import get_llm
 
 # Models that require specific API keys
 _MODEL_KEYS = {
@@ -58,7 +57,3 @@ def select_model(complexity: str, budget_remaining: float) -> str:
     return "gemini-2.0-flash"
 
 
-def get_routed_llm(complexity: str, budget_remaining: float):
-    """Get LLM instance based on routing decision."""
-    model = select_model(complexity, budget_remaining)
-    return get_llm(model), model

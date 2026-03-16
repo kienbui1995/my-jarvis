@@ -3,7 +3,7 @@ import asyncio
 import hashlib
 import logging
 
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, AIMessage
 from pydantic import BaseModel
 from typing import Literal
 
@@ -13,6 +13,7 @@ from llm.budget import get_remaining_budget
 from llm.gateway import get_llm
 from memory.context_builder import build_context
 from llm.embeddings import embed_text
+from core import injection
 from core.injection import scan_injection
 from core.config import settings
 from agent.registry import SPECIALIST_KEYWORDS
@@ -132,10 +133,16 @@ async def router_node(state: AgentState) -> dict:
 
     budget = await get_remaining_budget(user_id, user_tier) if user_id else 0.10
 
-    # Injection scan
+    # Injection scan — block high-confidence injections
     inj_score, inj_pattern = scan_injection(last_msg)
     if inj_score > 0:
         logger.warning(f"Injection detected: user={user_id} score={inj_score} pattern={inj_pattern}")
+    if injection.should_block(inj_score):
+        return {
+            "injection_score": inj_score,
+            "final_response": "Xin lỗi, tôi không thể xử lý yêu cầu này.",
+            "messages": [AIMessage(content="Xin lỗi, tôi không thể xử lý yêu cầu này.")],
+        }
 
     model = select_model(decision.complexity, budget)
 
