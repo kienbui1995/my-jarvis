@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.0.0-alpha] — 2026-03-16
+## [4.0.0] — 2026-03-16
 
 ### M12: Advanced Voice Pipeline
 - Backend STT via Gemini 2.0 Flash (`gemini-stt`) through LiteLLM Proxy
@@ -60,6 +60,15 @@
 - **2 new agent tools** (18 → 20 total): `analyze_file`, `ocr_file`
 - **HTTP chat** accepts `file_key` for image-attached messages
 - **Mini App**: file attach button (📎), image preview in bubbles, pending file indicator
+
+### M18: Browser Automation
+- **4 new agent tools** (20 → 24 total):
+  - `browse_web`: navigate URL + extract text, optional LLM Q&A about page content
+  - `browse_click`: navigate + click element (CSS selector) + extract result
+  - `browse_fill`: navigate + fill form fields (JSON) + submit
+  - `browse_screenshot`: capture page screenshot + analyze with Gemini vision
+- **Playwright Chromium** headless, shared instance with asyncio.Lock
+- Dockerfile updated: `playwright install --with-deps chromium`
 
 ### V3 Codebase Review (16 fixes)
 - P0: prod backend/worker missing litellm-net network, webhook using non-checkpointed graph, refresh token UUID mismatch, webhook missing conversation_id
