@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.0.0] — 2026-03-16
+
+### Channel Expansion (5 → 8 channels)
+- **WhatsApp Business Cloud API**: webhook verification (GET hub.verify_token), message receive (text + image caption), send response (4096 char), X-Hub-Signature-256 verification
+- **Slack Events API**: URL verification challenge, bot loop prevention, thread-aware responses (thread_ts), v0 signing secret HMAC verification
+- **Discord Interactions API**: ping/pong, slash command parsing, message chunking (2000 char), deferred interaction response, Ed25519 signature verification (PyNaCl)
+- User model: `whatsapp_id`, `slack_id`, `discord_id` columns
+- Proactive notifications sent to all 8 connected channels
+- Alembic migration `f6a7b8c9d0e1`
+- Competitive analysis vs OpenClaw (37 channels), NanoBot (15), GoClaw (7)
+
 ## [6.0.0] — 2026-03-16
 
 ### Phase A: Deep Autonomy
