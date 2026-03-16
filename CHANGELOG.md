@@ -32,6 +32,18 @@
 - ARQ worker: event consumer as background task + cron jobs emit into bus
 - Extensibility: new trigger = 1 file + `@register_handler`
 
+### M15: Vietnamese Service Integrations
+- **5 new agent tools** (13 → 18 total):
+  - `weather_vn`: OpenWeather API, 15+ Vietnamese city aliases, formatted tiếng Việt
+  - `news_vn`: VnExpress RSS (8 chuyên mục: thời sự, thế giới, kinh doanh, công nghệ, thể thao, giải trí, sức khỏe, giáo dục), optional LLM summary
+  - `google_calendar_list`: read events from user's Google Calendar via OAuth2
+  - `gmail_read`: list recent emails with metadata via Gmail API
+  - `gmail_send`: send email via Gmail API
+- **Google OAuth2 per-user consent flow**: authorization code → access_token + refresh_token, auto-refresh with 5min buffer
+- **GoogleOAuthToken** DB model for per-user token storage
+- **API endpoints**: `GET /google/auth-url`, `GET /google/callback`, `GET /google/status`, `DELETE /google/disconnect`
+- Config: `OPENWEATHER_API_KEY`, `GOOGLE_CLIENT_SECRET`
+
 ### V3 Codebase Review (16 fixes)
 - P0: prod backend/worker missing litellm-net network, webhook using non-checkpointed graph, refresh token UUID mismatch, webhook missing conversation_id
 - P1: webhook channels upgraded to full V3 features, WS auto-reconnect (exponential backoff), streaming state reset on disconnect
