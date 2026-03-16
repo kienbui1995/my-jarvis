@@ -42,7 +42,7 @@ services:
       - litellm-net
     deploy:
       resources:
-        limits: { memory: 512M, cpus: "1" }
+        limits: { memory: 1G, cpus: "1.5" }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

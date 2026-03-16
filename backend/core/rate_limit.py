@@ -1,9 +1,11 @@
 """Rate limiting — split read/write, Redis sliding window."""
 import time
+
+from jose import JWTError, jwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from jose import jwt, JWTError
+
 from core.config import settings
 
 # Read (GET) = cheap, high limit. Write (POST/PUT/DELETE) = expensive, stricter.
@@ -15,8 +17,16 @@ TIER_LIMITS = {
 
 WS_LIMITS = {"free": 20, "pro": 60, "pro_plus": 120}
 
-SKIP_PATHS = ("/health", "/docs", "/openapi.json")
+SKIP_PATHS = ("/health", "/health/ready", "/docs", "/openapi.json")
 SKIP_PREFIXES = ("/api/v1/auth/", "/api/v1/webhooks/")
+
+# Stricter per-endpoint RPM limits for expensive operations
+ENDPOINT_LIMITS = {
+    "/api/v1/voice/transcribe": 5,
+    "/api/v1/voice/speak": 10,
+    "/api/v1/files/upload": 10,
+    "/api/v1/chat": 20,
+}
 
 
 async def _check_rate(redis, key: str, limit: int, window: int = 60) -> bool:
@@ -53,6 +63,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         identity = user_id or request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host
         limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
         is_write = request.method in ("POST", "PUT", "DELETE", "PATCH")
+
+        # Per-endpoint stricter limits for expensive operations
+        endpoint_limit = ENDPOINT_LIMITS.get(path)
+        if endpoint_limit and not await _check_rate(
+            redis, f"rate:ep:{path}:{identity}", endpoint_limit
+        ):
+            return JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
 
         # Read vs write RPM
         rpm_key = f"rate:{'w' if is_write else 'r'}:{identity}"

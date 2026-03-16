@@ -13,6 +13,24 @@ _lock = asyncio.Lock()
 MAX_PAGE_TEXT = 5000
 NAVIGATION_TIMEOUT = 15000  # 15s
 
+# Block internal/dangerous URLs to prevent SSRF
+_BLOCKED_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "169.254.169.254", "metadata.google"}
+_BLOCKED_SCHEMES = {"file", "ftp", "data", "javascript"}
+
+
+def _validate_url(url: str) -> str | None:
+    """Validate URL is safe to browse. Returns error message or None."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme in _BLOCKED_SCHEMES:
+        return f"Scheme not allowed: {parsed.scheme}"
+    host = (parsed.hostname or "").lower()
+    if host in _BLOCKED_HOSTS or host.endswith(".internal") or host.startswith("10."):
+        return f"Host not allowed: {host}"
+    if parsed.port and parsed.port not in (80, 443, 8080, 8443):
+        return f"Port not allowed: {parsed.port}"
+    return None
+
 
 async def _get_browser():
     global _browser
@@ -31,6 +49,9 @@ async def navigate_and_extract(url: str) -> dict:
 
     Returns {"text": str, "title": str, "screenshot_b64": str, "url": str}
     """
+    err = _validate_url(url)
+    if err:
+        raise ValueError(err)
     browser = await _get_browser()
     page = await browser.new_page()
     try:
@@ -57,6 +78,9 @@ async def navigate_and_extract(url: str) -> dict:
 
 async def click_and_extract(url: str, selector: str) -> dict:
     """Navigate to URL, click element, then extract resulting page."""
+    err = _validate_url(url)
+    if err:
+        raise ValueError(err)
     browser = await _get_browser()
     page = await browser.new_page()
     try:
@@ -77,6 +101,9 @@ async def click_and_extract(url: str, selector: str) -> dict:
 
 async def fill_and_submit(url: str, fields: dict[str, str], submit_selector: str = "") -> dict:
     """Navigate to URL, fill form fields, optionally submit."""
+    err = _validate_url(url)
+    if err:
+        raise ValueError(err)
     browser = await _get_browser()
     page = await browser.new_page()
     try:
@@ -100,6 +127,9 @@ async def fill_and_submit(url: str, fields: dict[str, str], submit_selector: str
 
 async def screenshot_page(url: str, full_page: bool = False) -> str:
     """Take a screenshot of a URL. Returns base64-encoded PNG."""
+    err = _validate_url(url)
+    if err:
+        raise ValueError(err)
     browser = await _get_browser()
     page = await browser.new_page()
     try:

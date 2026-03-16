@@ -46,6 +46,34 @@ async def weather_vn(city: str) -> str:
         "units": "metric", "lang": "vi",
     }
 
+    # Check Redis cache first (15min TTL)
+    import core.redis as redis_pool
+    cache_key = f"weather:{query}"
+    try:
+        r = redis_pool.get()
+        cached = await r.get(cache_key)
+        if cached:
+            import json
+            data = json.loads(cached)
+            name = data.get("name", city)
+            main = data.get("main", {})
+            weather = data.get("weather", [{}])[0]
+            wind = data.get("wind", {})
+            desc_en = weather.get("description", "")
+            desc = _WEATHER_VI.get(desc_en, weather.get("description", ""))
+            temp = main.get("temp", "?")
+            feels = main.get("feels_like", "?")
+            humidity = main.get("humidity", "?")
+            wind_speed = wind.get("speed", "?")
+            return (
+                f"🌤 Thời tiết {name}: {desc}\n"
+                f"🌡 Nhiệt độ: {temp}°C (cảm giác {feels}°C)\n"
+                f"💧 Độ ẩm: {humidity}%\n"
+                f"💨 Gió: {wind_speed} m/s"
+            )
+    except Exception:
+        pass
+
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(url, params=params)
         if resp.status_code == 404:
@@ -53,6 +81,13 @@ async def weather_vn(city: str) -> str:
         if resp.status_code != 200:
             return f"Lỗi API thời tiết (HTTP {resp.status_code})"
         data = resp.json()
+
+    # Cache for 15 minutes
+    try:
+        import json
+        await r.setex(cache_key, 900, json.dumps(data))
+    except Exception:
+        pass
 
     name = data.get("name", city)
     main = data.get("main", {})

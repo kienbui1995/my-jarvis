@@ -1,28 +1,37 @@
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version as pkg_version
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 import core.redis as redis_pool
+from api.v1 import (
+    analytics,
+    audit,
+    auth,
+    calendar,
+    chat,
+    conversations,
+    feedback,
+    files,
+    google_connect,
+    mcp,
+    notifications,
+    preferences,
+    tasks,
+    triggers,
+    users,
+    voice,
+    webhooks,
+    ws,
+)
+from api.v1 import settings as settings_api
 from core.config import settings
 from core.headers import SecurityHeadersMiddleware
 from core.rate_limit import RateLimitMiddleware
-from api.v1 import webhooks, auth, users, tasks, calendar, analytics, ws, mcp, notifications, conversations
-from api.v1 import settings as settings_api
-from api.v1 import audit
-from api.v1 import preferences
-from api.v1 import feedback
-from api.v1 import voice
-from api.v1 import triggers
-from api.v1 import google_connect
-from api.v1 import chat
-from api.v1 import files
-
-from importlib.metadata import version as pkg_version
-
-import sentry_sdk
 
 logging.basicConfig(level=logging.INFO if not settings.DEBUG else logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -114,3 +123,43 @@ app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": APP_VERSION}
+
+
+@app.get("/health/ready")
+async def health_ready():
+    """Deep health check — verify all dependencies are reachable."""
+    checks = {}
+    # PostgreSQL
+    try:
+        from db.session import engine
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        checks["postgres"] = "ok"
+    except Exception as e:
+        checks["postgres"] = f"error: {e}"
+    # Redis
+    try:
+        r = redis_pool.get()
+        await r.ping()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+    # MinIO
+    try:
+        from services.storage import get_client
+        client = get_client()
+        client.bucket_exists(settings.MINIO_BUCKET)
+        checks["minio"] = "ok"
+    except Exception as e:
+        checks["minio"] = f"error: {e}"
+    # LiteLLM
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5) as c:
+            r = await c.get(f"{settings.LITELLM_BASE_URL.rstrip('/v1')}/health")
+            checks["litellm"] = "ok" if r.status_code == 200 else f"http {r.status_code}"
+    except Exception as e:
+        checks["litellm"] = f"error: {e}"
+
+    all_ok = all(v == "ok" for v in checks.values())
+    return {"status": "ready" if all_ok else "degraded", "version": APP_VERSION, "checks": checks}
