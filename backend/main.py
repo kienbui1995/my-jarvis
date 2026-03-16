@@ -14,6 +14,7 @@ from api.v1 import settings as settings_api
 from api.v1 import audit
 from api.v1 import preferences
 from api.v1 import feedback
+from api.v1 import voice
 
 from importlib.metadata import version as pkg_version
 
@@ -99,6 +100,7 @@ app.include_router(settings_api.router, prefix=f"{_v1}/settings", tags=["setting
 app.include_router(audit.router, prefix=f"{_v1}/audit", tags=["audit"])
 app.include_router(preferences.router, prefix=f"{_v1}/settings", tags=["preferences"])
 app.include_router(feedback.router, prefix=_v1, tags=["feedback"])
+app.include_router(voice.router, prefix=f"{_v1}/voice", tags=["voice"])
 
 
 @app.get("/health")
