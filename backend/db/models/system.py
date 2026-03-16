@@ -45,6 +45,30 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class Habit(Base):
+    __tablename__ = "habits"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    frequency: Mapped[str] = mapped_column(String(20), default="daily")
+    streak: Mapped[int] = mapped_column(Integer, default=0)
+    best_streak: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class HabitLog(Base):
+    __tablename__ = "habit_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    habit_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("habits.id", ondelete="CASCADE"), index=True
+    )
+    checked_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class GoogleOAuthToken(Base):
     __tablename__ = "google_oauth_tokens"
 

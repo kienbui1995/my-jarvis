@@ -17,6 +17,7 @@ from api.v1 import (
     calendar,
     chat,
     conversations,
+    engagement,
     feedback,
     files,
     google_connect,
@@ -124,6 +125,7 @@ app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
 app.include_router(agent_tasks.router, prefix=f"{_v1}/agent-tasks", tags=["agent-tasks"])
 app.include_router(marketplace.router, prefix=f"{_v1}/marketplace", tags=["marketplace"])
+app.include_router(engagement.router, prefix=_v1, tags=["engagement"])
 
 # Public API (developer access via API keys)
 from api.public.routes import router as public_router

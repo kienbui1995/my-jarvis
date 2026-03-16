@@ -9,6 +9,8 @@ from db.models.system import (
     APIKey,
     CustomTool,
     GoogleOAuthToken,
+    Habit,
+    HabitLog,
     LLMUsage,
     MCPServer,
     Notification,
@@ -20,6 +22,6 @@ __all__ = [
     "Base", "User", "Conversation", "Message", "Task", "CalendarEvent", "Expense",
     "Memory", "KnowledgeEntity", "KnowledgeRelation",
     "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer",
-    "GoogleOAuthToken", "APIKey", "CustomTool",
+    "GoogleOAuthToken", "APIKey", "CustomTool", "Habit", "HabitLog",
     "EvidenceLog", "UserPreference", "UserPromptRule", "UserToolPermission",
 ]
