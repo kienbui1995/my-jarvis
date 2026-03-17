@@ -92,6 +92,9 @@ services:
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     depends_on:
       - backend
+    networks:
+      - default
+      - tunnel-net
     deploy:
       resources:
         limits: { memory: 1G }
@@ -104,4 +107,6 @@ volumes:
 networks:
   litellm-net:
     name: litellm-proxy_default
+    external: true
+  tunnel-net:
     external: true

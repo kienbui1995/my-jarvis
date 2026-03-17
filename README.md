@@ -1,30 +1,25 @@
-# MY JARVIS 🤖
+# MY JARVIS
 
-> **Hiểu bạn. Làm thay bạn. Dữ liệu thuộc về bạn.**
+> **Hieu ban. Lam thay ban. Du lieu thuoc ve ban.**
 
-Vietnamese-first agentic personal AI assistant — multi-channel (Zalo, Telegram, Web), smart LLM routing, persistent memory, proactive actions.
+Vietnamese-first agentic personal AI assistant — 8 channels, smart LLM routing, persistent memory, proactive automation, developer ecosystem.
 
-**V3 Intelligence Layer** — Smart Router, Plan-and-Execute, Conversation Memory, Memory Consolidation, Preference Learning, HITL, Evidence Logging, Supervision. [Full changelog →](CHANGELOG.md)
+**V7.0.0** — 44 modules, 24 tools, 8 channels. [Full changelog](CHANGELOG.md) | [Project summary](docs/PROJECT_SUMMARY_V7.md)
 
 ## Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) for full technical design.
-
 ```
-Zalo / Telegram / Web
-        │
-   Cloudflare Tunnel (SSL + routing)
-        │
-   ┌────┴────┐
-   │ Next.js │ ← Frontend (port 3000)
-   │ FastAPI │ ← Backend  (port 8000)
-   └────┬────┘
-        │
-   LangGraph Agent ──► Tools (Tasks, Calendar, Finance, Memory, Web)
-        │
-   LiteLLM Proxy ──► Gemini / Claude / DeepSeek
-        │
-   PostgreSQL + pgvector │ Redis │ MinIO
+Zalo OA / Zalo Bot / Telegram / WhatsApp / Slack / Discord / Web / Mini App
+        |
+   Cloudflare Tunnel (HTTPS)
+        |
+   Next.js 15 (frontend)  +  FastAPI (backend)
+        |
+   LangGraph Agent Pipeline (10 nodes)
+        |
+   LiteLLM Proxy  -->  Gemini / Claude / DeepSeek / GPT
+        |
+   PostgreSQL+pgvector | Redis | MinIO
 ```
 
 ## Quick Start
@@ -34,61 +29,69 @@ cp .env.example .env
 # Fill in API keys in .env
 
 make build
-make up
-make db-upgrade
-
-# Backend:  http://localhost:8000
-# Frontend: http://localhost:3000
+make dev             # Dev: backend :8002, frontend :3002
+make db-upgrade      # Apply migrations
 ```
 
-## Production Deploy
+## Production
 
 ```bash
 cp .env.example .env.prod
 # Fill in strong passwords + API keys
 
 make build
-make prod          # Uses .env.prod + docker-compose.prod.yml
+make prod            # Uses .env.prod + docker-compose.prod.yml
 ```
 
 ## Commands
 
 ```bash
-make help          # Show all commands
-make up            # Start dev services
-make down          # Stop services
-make prod          # Start production
-make logs s=backend # Tail logs
+make help              # Show all commands
+make dev               # Start dev services
+make dev-down          # Stop dev services
+make prod              # Start production
+make prod-down         # Stop production
+make dev-logs s=backend  # Tail logs
 make db-migrate m="description"  # Create migration
-make db-upgrade    # Apply migrations
-make lint          # Run linters
-make test          # Run tests
-```
-
-## Project Structure
-
-```
-my-jarvis/
-├── backend/          # FastAPI + LangGraph
-├── frontend/         # Next.js 15 dashboard
-├── docs/             # Architecture, design specs
-├── infra/            # Cloudflare Tunnel config, backup script
-├── scripts/          # Setup scripts
-└── azure-pipelines.yml  # CI/CD
+make db-upgrade        # Apply migrations
+make lint              # ruff check (backend)
+make test              # pytest (backend, in Docker)
 ```
 
 ## Tech Stack
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js 15, Tailwind, Piper TTS (Vietnamese) |
+| Frontend | Next.js 15, Tailwind CSS v4, TypeScript, Zustand |
 | Backend | FastAPI, LangGraph, Python 3.12 |
-| LLM | LiteLLM Proxy → Gemini, Claude, DeepSeek |
+| LLM | LiteLLM Proxy -> Gemini, Claude, DeepSeek, GPT |
 | Database | PostgreSQL + pgvector, Redis |
 | Storage | MinIO (S3-compatible) |
+| Voice | Gemini STT, Vertex TTS, Piper WASM (fallback) |
 | Monitoring | Sentry (backend + frontend) |
 | Deploy | Docker Compose, Cloudflare Tunnel |
 | CI/CD | Azure Pipelines |
+| Billing | Stripe |
+
+## Project Structure
+
+```
+my-jarvis/
+├── backend/           # FastAPI + LangGraph (155+ files)
+│   ├── agent/         # Pipeline, tools, nodes
+│   ├── api/v1/        # 54 API endpoints
+│   ├── channels/      # 8 channel adapters
+│   ├── llm/           # Gateway, router, budget
+│   ├── services/      # Proactive engine, handlers
+│   └── db/            # Models (22), migrations (11)
+├── frontend/          # Next.js 15 (50+ files)
+│   ├── app/           # Pages (chat, tasks, calendar, settings, analytics)
+│   ├── components/    # UI + chat + layout
+│   └── lib/           # API client, WebSocket, stores
+├── docs/              # Architecture, specs, summary
+├── infra/             # Cloudflare Tunnel, backup
+└── scripts/           # Setup scripts
+```
 
 ## License
 
