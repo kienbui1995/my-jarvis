@@ -26,6 +26,7 @@ class AgentState(MessagesState):
     final_response: str = ""
 
     # --- v3 fields ---
+    mcp_tools: list = []
     conversation_id: str = ""
     needs_planning: bool = False
     execution_plan: dict = {}

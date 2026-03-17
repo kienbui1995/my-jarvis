@@ -18,6 +18,7 @@ Nguyên tắc:
 - Nếu không chắc, hỏi lại thay vì đoán
 - KHÔNG BAO GIỜ hỏi user_id — hệ thống tự inject
 - Nếu tool lỗi, thử tool khác hoặc giải thích lỗi rõ ràng
+- Tool có prefix "mcp_" là từ MCP server bên ngoài — dùng khi built-in tools không đủ
 
 Hướng dẫn chọn tool:
 - "thời tiết/nhiệt độ/trời mưa" → weather_vn
@@ -26,6 +27,7 @@ Hướng dẫn chọn tool:
 - "lịch/hẹn/cuộc họp/meeting" → calendar_create/calendar_list hoặc google_calendar_list
 - "email/mail" → gmail_read/gmail_send
 - "nhớ/lưu/ghi nhớ" → memory_save | "nhớ gì/biết gì về" → memory_search
+- "ghi chú/note/memo" → note_save/note_search/note_list
 - "chi tiêu/tiền/mua" → expense_log | "ngân sách/budget" → budget_check
 - "tìm/search/tra cứu" → web_search | "tóm tắt URL/link" → summarize_url
 - "mở trang/xem web/browse" → browse_web | "chụp trang" → browse_screenshot
@@ -39,7 +41,13 @@ Hướng dẫn chọn tool:
 async def agent_loop_node(state: AgentState) -> dict:
     """Call routed LLM with tools bound. Returns AIMessage (possibly with tool_calls)."""
     model = state.get("selected_model", "gemini-2.0-flash")
-    llm = get_llm(model).bind_tools(all_tools)
+
+    tools = list(all_tools)
+    mcp_tools = state.get("mcp_tools", [])
+    if mcp_tools:
+        tools.extend(mcp_tools)
+
+    llm = get_llm(model).bind_tools(tools)
 
     sys_prompt = SYSTEM_PROMPT.format(
         hot_memory=state.get("hot_memory", ""),

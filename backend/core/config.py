@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     SUPERVISION_ENABLED: bool = True
     TOOL_PERMISSIONS_ENABLED: bool = True
 
+    # MCP Gateway (V8)
+    MCP_GATEWAY_ENABLED: bool = True
+
     # Voice (M12)
     VOICE_ENABLED: bool = True
     VOICE_MAX_AUDIO_SIZE: int = 10 * 1024 * 1024  # 10MB

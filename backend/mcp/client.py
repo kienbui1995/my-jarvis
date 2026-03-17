@@ -106,18 +106,22 @@ async def call_tool(server: MCPServer, tool_name: str, arguments: dict) -> str:
 
 
 async def get_mcp_tools(user_id: str, db: AsyncSession) -> list[StructuredTool]:
-    """Load all enabled MCP servers for user, discover tools, return as LangChain tools."""
+    """Load all enabled MCP servers for user, discover tools, return as LangChain tools.
+    NOTE: Superseded by mcp.loader — kept for backward compatibility."""
     servers = (await db.execute(select(MCPServer).where(MCPServer.user_id == UUID(user_id), MCPServer.enabled == True))).scalars().all()  # noqa: E712
     tools = []
     for srv in servers:
         try:
             mcp_tools = await discover_tools(srv)
             for t in mcp_tools:
-                # Create a LangChain tool that proxies to MCP
                 _srv, _name = srv, t["name"]
+
+                async def _call(s=_srv, n=_name, **kwargs):
+                    return await call_tool(s, n, kwargs)
+
                 tools.append(StructuredTool.from_function(
-                    func=lambda **kwargs, _s=_srv, _n=_name: None,  # sync placeholder
-                    coroutine=lambda **kwargs, _s=_srv, _n=_name: call_tool(_s, _n, kwargs),
+                    func=lambda **kwargs: None,
+                    coroutine=_call,
                     name=f"mcp_{srv.name}_{t['name']}",
                     description=t.get("description", f"MCP tool: {t['name']}"),
                 ))

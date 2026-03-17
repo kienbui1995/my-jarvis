@@ -93,4 +93,13 @@ export const api = {
   listMemories: (type = "", limit = 20) => request<{ memories: Array<{ id: string; type: string; content: string; importance: number; metadata: Record<string, unknown> | null; created_at: string }>; total: number }>(`/memories/?memory_type=${type}&limit=${limit}`),
   searchMemories: (q: string) => request<{ memories: Array<{ id: string; type: string; content: string; importance: number; metadata: Record<string, unknown> | null; created_at: string }> }>(`/memories/search?q=${encodeURIComponent(q)}`),
   deleteMemory: (id: string) => request<{ deleted: boolean }>(`/memories/${id}`, { method: "DELETE" }),
+  // MCP Gateway
+  mcpRegistry: () => request<Array<{ id: string; name: string; description: string; icon: string; category: string; required_fields: string[] }>>("/mcp/registry"),
+  mcpServers: () => request<Array<{ id: string; name: string; transport: string; config: Record<string, unknown>; enabled: boolean; curated_id: string | null }>>("/mcp/"),
+  mcpConnect: (curatedId: string, apiKey: string) => request<{ id: string; name: string }>(`/mcp/connect/${curatedId}`, { method: "POST", body: JSON.stringify({ api_key: apiKey }) }),
+  mcpAddCustom: (name: string, transport: string, config: Record<string, unknown>) => request<{ id: string }>("/mcp/custom", { method: "POST", body: JSON.stringify({ name, transport, config }) }),
+  mcpToggle: (id: string, enabled: boolean) => request<{ ok: boolean }>(`/mcp/${id}?enabled=${enabled}`, { method: "PATCH" }),
+  mcpDelete: (id: string) => request<{ ok: boolean }>(`/mcp/${id}`, { method: "DELETE" }),
+  mcpTools: (id: string) => request<{ tools: Array<{ name: string; description: string }> }>(`/mcp/${id}/tools`),
+  mcpHealth: (id: string) => request<{ status: string; tools_count?: number; error?: string }>(`/mcp/${id}/health`),
 };

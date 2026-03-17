@@ -65,10 +65,16 @@ async def tools_node(state: AgentState) -> dict:
             continue
 
         tool = _tools_by_name.get(tc["name"])
+        is_mcp = False
+        if not tool:
+            # Check MCP tools
+            mcp_tools = state.get("mcp_tools", [])
+            tool = next((t for t in mcp_tools if t.name == tc["name"]), None)
+            is_mcp = tool is not None
         if not tool:
             results.append(ToolMessage(content=f"Tool {tc['name']} not found", tool_call_id=tc["id"]))
             continue
-        args = {**tc["args"], "user_id": user_id}
+        args = {**tc["args"]} if is_mcp else {**tc["args"], "user_id": user_id}
         t0 = time.monotonic()
         try:
             output = await tool.ainvoke(args)

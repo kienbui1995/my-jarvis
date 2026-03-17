@@ -5,13 +5,14 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Shield, Sliders, Brain, Link2, Wrench, ClipboardList, Search, Trash2 } from "lucide-react";
+import { X, Plus, Shield, Sliders, Brain, Link2, Wrench, ClipboardList, Search, Trash2, Plug } from "lucide-react";
 
 const tabs = [
   { label: "Hồ sơ", icon: null },
   { label: "Tùy chọn", icon: Sliders },
   { label: "Bộ nhớ", icon: Brain },
   { label: "Kết nối", icon: Link2 },
+  { label: "MCP", icon: Plug },
   { label: "Tools", icon: Wrench },
   { label: "Audit", icon: ClipboardList },
 ] as const;
@@ -224,6 +225,108 @@ function AuditTab() {
   );
 }
 
+const ICON_MAP: Record<string, string> = { google: "🔵", github: "⚫", notion: "📝" };
+
+function MCPTab() {
+  const [registry, setRegistry] = useState<Array<{ id: string; name: string; description: string; icon: string; category: string }>>([]);
+  const [servers, setServers] = useState<Array<{ id: string; name: string; enabled: boolean; curated_id: string | null }>>([]);
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const [reg, srv] = await Promise.all([api.mcpRegistry(), api.mcpServers()]);
+      setRegistry(reg);
+      setServers(srv);
+    } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const connectedIds = new Set(servers.map((s) => s.curated_id));
+
+  const handleConnect = async (curatedId: string) => {
+    if (!apiKey.trim()) return;
+    try {
+      await api.mcpConnect(curatedId, apiKey);
+      setApiKey("");
+      setConnecting(null);
+      await load();
+    } catch {}
+  };
+
+  const handleToggle = async (id: string, enabled: boolean) => {
+    setServers((s) => s.map((x) => x.id === id ? { ...x, enabled } : x));
+    try { await api.mcpToggle(id, enabled); } catch { await load(); }
+  };
+
+  const handleDelete = async (id: string) => {
+    setServers((s) => s.filter((x) => x.id !== id));
+    try { await api.mcpDelete(id); } catch { await load(); }
+  };
+
+  if (loading) return <p className="text-sm text-[var(--text-secondary)] py-4">Đang tải...</p>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-medium mb-3">MCP Servers có sẵn</p>
+        <div className="grid grid-cols-1 gap-3">
+          {registry.map((r) => {
+            const connected = connectedIds.has(r.id);
+            return (
+              <div key={r.id} className="p-4 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{ICON_MAP[r.icon] || "🔌"}</span>
+                    <div>
+                      <p className="font-medium">{r.name}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{r.description}</p>
+                    </div>
+                  </div>
+                  {connected ? (
+                    <Badge color="green" className="text-xs">Đã kết nối</Badge>
+                  ) : connecting === r.id ? (
+                    <div className="flex gap-2 items-center">
+                      <Input value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="API Key..." className="w-48 text-xs" onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleConnect(r.id)} />
+                      <Button size="sm" onClick={() => handleConnect(r.id)}>OK</Button>
+                      <button onClick={() => { setConnecting(null); setApiKey(""); }} className="text-[var(--text-tertiary)]"><X size={14} /></button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => setConnecting(r.id)}>Kết nối</Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {servers.length > 0 && (
+        <div>
+          <p className="text-sm font-medium mb-3">Đã kết nối ({servers.length})</p>
+          <div className="space-y-2">
+            {servers.map((s) => (
+              <div key={s.id} className="flex items-center justify-between p-3 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${s.enabled ? "bg-[var(--accent-green)]" : "bg-[var(--text-tertiary)]"}`} />
+                  <span className="text-sm">{s.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Toggle on={s.enabled} onChange={(v) => handleToggle(s.id, v)} />
+                  <button onClick={() => handleDelete(s.id)} className="text-[var(--text-tertiary)] hover:text-[var(--accent-red)]"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TYPE_LABELS: Record<string, string> = { fact: "Sự kiện", preference: "Sở thích", episodic: "Hội thoại", note: "Ghi chú" };
 
 function MemoryTab() {
@@ -337,9 +440,9 @@ export default function SettingsPage() {
         {tab === 1 && <PreferencesTab />}
         {tab === 2 && <MemoryTab />}
         {tab === 3 && <ConnectionsTab />}
-
-        {tab === 4 && <ToolPermissionsTab />}
-        {tab === 5 && <AuditTab />}
+        {tab === 4 && <MCPTab />}
+        {tab === 5 && <ToolPermissionsTab />}
+        {tab === 6 && <AuditTab />}
       </div>
     </div>
   );

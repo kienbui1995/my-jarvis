@@ -154,6 +154,16 @@ async def router_node(state: AgentState) -> dict:
             ctx = await build_context(user_id, query_emb, db)
             hot, cold = ctx["hot_memory"], ctx["cold_memory"]
 
+    # V8: Load MCP tools
+    mcp_tools = []
+    if user_id and settings.MCP_GATEWAY_ENABLED:
+        try:
+            from mcp.loader import load_mcp_tools
+            async with async_session() as mcp_db:
+                mcp_tools = await load_mcp_tools(user_id, user_tier, "", mcp_db)
+        except Exception:
+            logger.exception("Failed to load MCP tools")
+
     return {
         "intent": decision.intent,
         "complexity": decision.complexity,
@@ -164,4 +174,5 @@ async def router_node(state: AgentState) -> dict:
         "injection_score": inj_score,
         "delegation_target": decision.specialist,
         "needs_planning": decision.needs_planning,
+        "mcp_tools": mcp_tools,
     }
