@@ -225,10 +225,10 @@ function AuditTab() {
   );
 }
 
-const ICON_MAP: Record<string, string> = { google: "🔵", github: "⚫", notion: "📝" };
+const ICON_MAP: Record<string, string> = { google: "🔵", github: "⚫", notion: "📝", trello: "🟦", linear: "🟣", sentry: "🔴" };
 
 function MCPTab() {
-  const [registry, setRegistry] = useState<Array<{ id: string; name: string; description: string; icon: string; category: string }>>([]);
+  const [registry, setRegistry] = useState<Array<{ id: string; name: string; description: string; icon: string; category: string; has_shared_key?: boolean }>>([]);
   const [servers, setServers] = useState<Array<{ id: string; name: string; enabled: boolean; curated_id: string | null }>>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
@@ -290,12 +290,15 @@ function MCPTab() {
                     <Badge color="green" className="text-xs">Đã kết nối</Badge>
                   ) : connecting === r.id ? (
                     <div className="flex gap-2 items-center">
-                      <Input value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder="API Key..." className="w-48 text-xs" onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleConnect(r.id)} />
+                      <Input value={apiKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)} placeholder={r.has_shared_key ? "API Key (hoặc để trống dùng key chung)..." : "API Key..."} className="w-48 text-xs" onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleConnect(r.id)} />
                       <Button size="sm" onClick={() => handleConnect(r.id)}>OK</Button>
                       <button onClick={() => { setConnecting(null); setApiKey(""); }} className="text-[var(--text-tertiary)]"><X size={14} /></button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="secondary" onClick={() => setConnecting(r.id)}>Kết nối</Button>
+                    <div className="flex items-center gap-2">
+                      {r.has_shared_key && <Badge color="blue" className="text-[10px]">Free</Badge>}
+                      <Button size="sm" variant="secondary" onClick={() => r.has_shared_key ? handleConnect(r.id) : setConnecting(r.id)}>{r.has_shared_key ? "Dùng ngay" : "Kết nối"}</Button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -77,6 +77,10 @@ class Settings(BaseSettings):
 
     # MCP Gateway (V8)
     MCP_GATEWAY_ENABLED: bool = True
+    MCP_GITHUB_KEY: str = ""
+    MCP_LINEAR_KEY: str = ""
+    MCP_SENTRY_KEY: str = ""
+    MCP_TRELLO_KEY: str = ""
 
     # Voice (M12)
     VOICE_ENABLED: bool = True

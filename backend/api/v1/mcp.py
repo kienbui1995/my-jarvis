@@ -10,7 +10,7 @@ from core.deps import get_current_user_id, get_db
 from db.models import MCPServer
 from mcp.loader import invalidate_cache
 from mcp.proxy import proxy_discover_tools
-from mcp.registry import get_curated_server, get_registry
+from mcp.registry import get_curated_server, get_registry, get_shared_key
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ class MCPServerCreate(BaseModel):
 
 
 class MCPConnectCurated(BaseModel):
-    api_key: str
+    api_key: str = ""  # Empty = use shared operator key
 
 
 class MCPServerOut(BaseModel):
@@ -68,7 +68,12 @@ async def connect_curated(
     if existing:
         raise HTTPException(status_code=409, detail="Already connected")
 
-    config = {**template["default_config"], "api_key": body.api_key, "curated_id": curated_id}
+    # Use user's key or fall back to shared operator key
+    api_key = body.api_key or get_shared_key(curated_id)
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key required (no shared key available)")
+    use_shared = not body.api_key and bool(get_shared_key(curated_id))
+    config = {**template["default_config"], "api_key": api_key, "curated_id": curated_id, "shared_key": use_shared}
     srv = MCPServer(user_id=UUID(user_id), name=template["name"], transport=template["transport"], config=config)
     db.add(srv)
     await db.commit()
