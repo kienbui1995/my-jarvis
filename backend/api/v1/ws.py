@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
 
 from agent.graph import get_jarvis_graph
@@ -73,6 +73,18 @@ async def _run_graph(graph, input_data, config, ws):
 
         if not interrupted:
             break
+
+    # Fallback: if streaming didn't capture content, extract from graph state
+    if not full_response:
+        try:
+            final_state = await graph.aget_state(config)
+            msgs = final_state.values.get("messages", [])
+            ai_msgs = [m for m in msgs if isinstance(m, AIMessage) and m.content and not m.tool_calls]
+            if ai_msgs:
+                full_response = ai_msgs[-1].content
+                await ws.send_json({"type": "stream", "content": full_response})
+        except Exception:
+            pass
 
     return full_response
 

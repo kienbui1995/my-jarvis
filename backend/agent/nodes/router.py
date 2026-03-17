@@ -3,7 +3,7 @@ import asyncio
 import hashlib
 import logging
 
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from pydantic import BaseModel
 from typing import Literal
 
