@@ -18,10 +18,11 @@ TIER_LIMITS = {
 WS_LIMITS = {"free": 20, "pro": 60, "pro_plus": 120}
 
 SKIP_PATHS = ("/health", "/health/ready", "/docs", "/openapi.json")
-SKIP_PREFIXES = ("/api/v1/auth/", "/api/v1/webhooks/")
+SKIP_PREFIXES = ("/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/google", "/api/v1/auth/zalo-miniapp", "/api/v1/webhooks/")
 
 # Stricter per-endpoint RPM limits for expensive operations
 ENDPOINT_LIMITS = {
+    "/api/v1/auth/register": 3,
     "/api/v1/voice/transcribe": 5,
     "/api/v1/voice/speak": 10,
     "/api/v1/files/upload": 10,

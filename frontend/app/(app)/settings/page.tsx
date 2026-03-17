@@ -5,14 +5,13 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Shield, Sliders, Brain, Link2, CreditCard, Wrench, ClipboardList } from "lucide-react";
+import { X, Plus, Shield, Sliders, Brain, Link2, Wrench, ClipboardList } from "lucide-react";
 
 const tabs = [
   { label: "Hồ sơ", icon: null },
   { label: "Tùy chọn", icon: Sliders },
   { label: "Bộ nhớ", icon: Brain },
   { label: "Kết nối", icon: Link2 },
-  { label: "Gói", icon: CreditCard },
   { label: "Tools", icon: Wrench },
   { label: "Audit", icon: ClipboardList },
 ] as const;
@@ -264,23 +263,8 @@ export default function SettingsPage() {
         {tab === 2 && <div className="space-y-3"><Input placeholder="🔍 Tìm trong bộ nhớ..." /><p className="text-sm text-[var(--text-secondary)] text-center py-8">Memory browser — coming soon</p></div>}
         {tab === 3 && <ConnectionsTab />}
 
-        {/* Subscription */}
-        {tab === 4 && (
-          <div className="space-y-4">
-            <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-              <p className="text-sm text-[var(--text-secondary)]">Gói hiện tại</p>
-              <p className="text-xl font-bold capitalize">{user?.tier || "Free"}</p>
-            </div>
-            <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--brand-primary)] rounded-[var(--radius-lg)]">
-              <p className="font-semibold">Nâng cấp Pro — 99.000đ/tháng</p>
-              <ul className="mt-2 space-y-1 text-sm text-[var(--text-secondary)]"><li>✓ Không giới hạn tin nhắn</li><li>✓ Model AI cao cấp hơn</li><li>✓ Bộ nhớ không giới hạn</li></ul>
-              <Button className="mt-3 w-full">Nâng cấp Pro</Button>
-            </div>
-          </div>
-        )}
-
-        {tab === 5 && <ToolPermissionsTab />}
-        {tab === 6 && <AuditTab />}
+        {tab === 4 && <ToolPermissionsTab />}
+        {tab === 5 && <AuditTab />}
       </div>
     </div>
   );
