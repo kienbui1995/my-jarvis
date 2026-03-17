@@ -31,7 +31,7 @@ class TestRegistry:
         assert set(SPECIALIST_KEYWORDS.keys()) == set(SPECIALISTS.keys())
 
     def test_keyword_detection(self):
-        from agent.nodes.router import _detect_specialist
+        from agent.nodes.router import _detect_specialist_keyword as _detect_specialist
         with patch("agent.nodes.router.settings") as mock_settings:
             mock_settings.MULTI_AGENT_ENABLED = True
             assert _detect_specialist("tạo task mới cho tôi") == "task"
@@ -41,13 +41,13 @@ class TestRegistry:
             assert _detect_specialist("tôi đã nói gì trước đó") == "memory"
 
     def test_no_specialist_for_general_chat(self):
-        from agent.nodes.router import _detect_specialist
+        from agent.nodes.router import _detect_specialist_keyword as _detect_specialist
         with patch("agent.nodes.router.settings") as mock_settings:
             mock_settings.MULTI_AGENT_ENABLED = True
             assert _detect_specialist("xin chào bạn") == ""
 
     def test_disabled_returns_empty(self):
-        from agent.nodes.router import _detect_specialist
+        from agent.nodes.router import _detect_specialist_keyword as _detect_specialist
         with patch("agent.nodes.router.settings") as mock_settings:
             mock_settings.MULTI_AGENT_ENABLED = False
             assert _detect_specialist("tạo task mới") == ""
@@ -103,7 +103,7 @@ class TestEvaluate:
         mock_llm = AsyncMock()
         mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content='{"pass": false, "reason": "bad"}'))
         with patch("agent.nodes.evaluate.get_llm", return_value=mock_llm):
-            state = {"messages": [HumanMessage(content="test"), AIMessage(content="a bad response here!!")], "retry_count": 0}
+            state = {"messages": [HumanMessage(content="test"), AIMessage(content="a bad response here!!")], "retry_count": 0, "complexity": "complex"}
             result = await evaluate_node(state)
             assert result["retry_count"] == 1
 
