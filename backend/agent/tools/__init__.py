@@ -2,10 +2,11 @@
 from agent.tools.browser_tools import browse_click, browse_fill, browse_screenshot, browse_web
 from agent.tools.calendar_tools import calendar_create, calendar_list
 from agent.tools.finance_tools import budget_check, expense_log
-from agent.tools.google_tools import gmail_read, gmail_send, google_calendar_list
+from agent.tools.google_tools import gmail_read, gmail_reply, gmail_send, google_calendar_list
 from agent.tools.graph_tools import graph_search
 from agent.tools.memory_tools import memory_save, memory_search
 from agent.tools.news_tools import news_vn
+from agent.tools.note_tools import note_list, note_save, note_search
 from agent.tools.task_tools import task_create, task_list, task_update
 from agent.tools.vision_tools import analyze_file, ocr_file
 from agent.tools.weather_tools import weather_vn
@@ -21,9 +22,11 @@ all_tools = [
     # M15: Vietnamese Service Integrations
     weather_vn,
     news_vn,
-    google_calendar_list, gmail_read, gmail_send,
+    google_calendar_list, gmail_read, gmail_send, gmail_reply,
     # M17: Vision
     analyze_file, ocr_file,
     # M18: Browser Automation
     browse_web, browse_click, browse_fill, browse_screenshot,
+    # Notes
+    note_save, note_search, note_list,
 ]

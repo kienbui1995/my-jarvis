@@ -1,4 +1,5 @@
 """News tool — Vietnamese news from VnExpress RSS + LLM summary."""
+import logging
 import re
 from xml.etree import ElementTree
 
@@ -6,6 +7,8 @@ import httpx
 from langchain_core.tools import tool
 
 from llm.gateway import get_llm
+
+logger = logging.getLogger(__name__)
 
 VNEXPRESS_RSS = "https://vnexpress.net/rss/tin-moi-nhat.rss"
 
@@ -26,7 +29,11 @@ def _strip_html(text: str) -> str:
 
 
 def _parse_rss(xml_text: str, limit: int = 5) -> list[dict]:
-    root = ElementTree.fromstring(xml_text)
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError:
+        logger.warning("Failed to parse RSS XML")
+        return []
     items = []
     for item in root.findall(".//item")[:limit]:
         title = item.findtext("title", "")
@@ -51,14 +58,21 @@ async def news_vn(
     """
     feed_url = CATEGORY_FEEDS.get(category.lower().strip(), VNEXPRESS_RSS)
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(feed_url, headers={"User-Agent": "Mozilla/5.0"})
-        if resp.status_code != 200:
-            return f"Không thể lấy tin tức (HTTP {resp.status_code})"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(feed_url, headers={"User-Agent": "Mozilla/5.0"})
+            if resp.status_code != 200:
+                return f"Không thể lấy tin tức (HTTP {resp.status_code})"
+            xml_text = resp.text
+    except httpx.TimeoutException:
+        return "Không thể kết nối VnExpress (timeout). Vui lòng thử lại sau."
+    except httpx.RequestError as e:
+        logger.warning(f"VnExpress request error: {e}")
+        return "Không thể kết nối VnExpress. Vui lòng thử lại sau."
 
-    articles = _parse_rss(resp.text, limit=7)
+    articles = _parse_rss(xml_text, limit=7)
     if not articles:
-        return "Không có tin tức mới."
+        return "Không có tin tức mới hoặc không đọc được dữ liệu RSS."
 
     if not summarize:
         label = f" ({category})" if category else ""

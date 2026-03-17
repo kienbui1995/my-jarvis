@@ -23,6 +23,7 @@ from api.v1 import (
     google_connect,
     marketplace,
     mcp,
+    memories,
     notifications,
     preferences,
     tasks,
@@ -123,6 +124,7 @@ app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"
 app.include_router(chat.router, prefix=_v1, tags=["chat"])
 app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
 app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
+app.include_router(memories.router, prefix=f"{_v1}/memories", tags=["memories"])
 app.include_router(agent_tasks.router, prefix=f"{_v1}/agent-tasks", tags=["agent-tasks"])
 app.include_router(marketplace.router, prefix=f"{_v1}/marketplace", tags=["marketplace"])
 app.include_router(engagement.router, prefix=_v1, tags=["engagement"])

@@ -89,4 +89,8 @@ export const api = {
   updateTrigger: (id: string, data: { config?: Record<string, unknown>; enabled?: boolean }) => request<{ ok: boolean }>(`/triggers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   // Analytics (V5)
   weeklyDigest: () => request<{ messages: number; tools_used: number; cost: number; top_tools: Array<{ name: string; count: number }> }>("/analytics/digest"),
+  // Memories
+  listMemories: (type = "", limit = 20) => request<{ memories: Array<{ id: string; type: string; content: string; importance: number; metadata: Record<string, unknown> | null; created_at: string }>; total: number }>(`/memories/?memory_type=${type}&limit=${limit}`),
+  searchMemories: (q: string) => request<{ memories: Array<{ id: string; type: string; content: string; importance: number; metadata: Record<string, unknown> | null; created_at: string }> }>(`/memories/search?q=${encodeURIComponent(q)}`),
+  deleteMemory: (id: string) => request<{ deleted: boolean }>(`/memories/${id}`, { method: "DELETE" }),
 };

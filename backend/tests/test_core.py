@@ -160,24 +160,23 @@ class TestBudget:
     @pytest.mark.asyncio
     async def test_get_remaining_budget(self):
         from llm.budget import get_remaining_budget
-        with patch("llm.budget.get_redis") as mock_get:
-            r = AsyncMock()
-            r.get = AsyncMock(return_value=None)
-            mock_get.return_value = r
+        r = AsyncMock()
+        r.get = AsyncMock(return_value=None)
+        with patch("llm.budget.redis_pool") as mock_pool:
+            mock_pool.get.return_value = r
             remaining = await get_remaining_budget("user1", "free")
             assert remaining == 0.02  # LLM_DAILY_BUDGET_FREE default
 
     @pytest.mark.asyncio
     async def test_budget_decreases_after_spend(self):
         from llm.budget import get_remaining_budget, record_spend
-        with patch("llm.budget.get_redis") as mock_get:
-            r = AsyncMock()
-            store = {}
-            r.get = AsyncMock(side_effect=lambda k: store.get(k))
-            r.incrbyfloat = AsyncMock(side_effect=lambda k, v: store.update({k: str(float(store.get(k, "0")) + v)}))
-            r.expire = AsyncMock()
-            mock_get.return_value = r
-
+        r = AsyncMock()
+        store = {}
+        r.get = AsyncMock(side_effect=lambda k: store.get(k))
+        r.incrbyfloat = AsyncMock(side_effect=lambda k, v: store.update({k: str(float(store.get(k, "0")) + v)}))
+        r.expire = AsyncMock()
+        with patch("llm.budget.redis_pool") as mock_pool:
+            mock_pool.get.return_value = r
             await record_spend("user1", 0.005)
             remaining = await get_remaining_budget("user1", "free")
             assert remaining == pytest.approx(0.015, abs=0.001)

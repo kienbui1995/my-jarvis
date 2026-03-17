@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Shield, Sliders, Brain, Link2, Wrench, ClipboardList } from "lucide-react";
+import { X, Plus, Shield, Sliders, Brain, Link2, Wrench, ClipboardList, Search, Trash2 } from "lucide-react";
 
 const tabs = [
   { label: "Hồ sơ", icon: null },
@@ -224,6 +224,81 @@ function AuditTab() {
   );
 }
 
+const TYPE_LABELS: Record<string, string> = { fact: "Sự kiện", preference: "Sở thích", episodic: "Hội thoại", note: "Ghi chú" };
+
+function MemoryTab() {
+  const [memories, setMemories] = useState<Array<{ id: string; type: string; content: string; importance: number; metadata: Record<string, unknown> | null; created_at: string }>>([]);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (search.trim()) {
+        const res = await api.searchMemories(search);
+        setMemories(res.memories);
+        setTotal(res.memories.length);
+      } else {
+        const res = await api.listMemories(filter, 30);
+        setMemories(res.memories);
+        setTotal(res.total);
+      }
+    } catch {}
+    setLoading(false);
+  }, [search, filter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async (id: string) => {
+    try { await api.deleteMemory(id); setMemories((m) => m.filter((x) => x.id !== id)); setTotal((t) => t - 1); } catch {}
+  };
+
+  const handleSearch = () => { load(); };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Tìm trong bộ nhớ..." className="flex-1" onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleSearch()} />
+        <Button size="sm" onClick={handleSearch}><Search size={14} /></Button>
+      </div>
+      <div className="flex gap-1">
+        {["", "fact", "preference", "episodic", "note"].map((t) => (
+          <button key={t} onClick={() => { setFilter(t); setSearch(""); }} className={`px-2.5 py-1 text-xs rounded-[var(--radius-md)] transition-colors ${filter === t && !search ? "bg-[var(--bg-tertiary)] text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
+            {t ? TYPE_LABELS[t] || t : "Tất cả"}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-[var(--text-tertiary)]">{total} bộ nhớ</p>
+      {loading ? (
+        <p className="text-sm text-[var(--text-secondary)] py-4">Đang tải...</p>
+      ) : memories.length === 0 ? (
+        <p className="text-sm text-[var(--text-secondary)] text-center py-8">Chưa có bộ nhớ nào. Chat với JARVIS để bắt đầu tạo.</p>
+      ) : (
+        <div className="space-y-2">
+          {memories.map((m) => (
+            <div key={m.id} className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-[var(--radius-lg)] group">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Badge color={m.type === "note" ? "blue" : m.type === "preference" ? "purple" : "default"} className="text-[10px]">{TYPE_LABELS[m.type] || m.type}</Badge>
+                    <span className="text-[10px] text-[var(--text-tertiary)]">{m.created_at ? new Date(m.created_at).toLocaleDateString("vi") : ""}</span>
+                  </div>
+                  <p className="text-sm text-[var(--text-primary)] break-words">{m.content.length > 200 ? m.content.slice(0, 200) + "..." : m.content}</p>
+                </div>
+                <button onClick={() => handleDelete(m.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)] hover:text-[var(--accent-red)] shrink-0" title="Xóa">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const user = useAuth((s) => s.user);
   const [tab, setTab] = useState(0);
@@ -260,7 +335,7 @@ export default function SettingsPage() {
         )}
 
         {tab === 1 && <PreferencesTab />}
-        {tab === 2 && <div className="space-y-3"><Input placeholder="🔍 Tìm trong bộ nhớ..." /><p className="text-sm text-[var(--text-secondary)] text-center py-8">Memory browser — coming soon</p></div>}
+        {tab === 2 && <MemoryTab />}
         {tab === 3 && <ConnectionsTab />}
 
         {tab === 4 && <ToolPermissionsTab />}
