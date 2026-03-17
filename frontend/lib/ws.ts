@@ -18,6 +18,7 @@ export function createWSClient(onMessage: (msg: WSMessage) => void, onClose?: ()
   let ws: WebSocket;
   let reconnectAttempts = 0;
   let closed = false;
+  let pendingMessages: string[] = [];
 
   function connect() {
     ws = new WebSocket(url);
@@ -25,6 +26,11 @@ export function createWSClient(onMessage: (msg: WSMessage) => void, onClose?: ()
     ws.onopen = () => {
       ws.send(JSON.stringify({ token }));
       reconnectAttempts = 0;
+      // Flush queued messages
+      for (const msg of pendingMessages) {
+        ws.send(msg);
+      }
+      pendingMessages = [];
     };
     ws.onmessage = (e) => {
       try { onMessage(JSON.parse(e.data)); } catch {}
@@ -45,9 +51,16 @@ export function createWSClient(onMessage: (msg: WSMessage) => void, onClose?: ()
   connect();
 
   return {
-    send: (content: string) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ content })); },
+    send: (content: string) => {
+      const msg = JSON.stringify({ content });
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(msg);
+      } else {
+        pendingMessages.push(msg);
+      }
+    },
     sendApproval: (approved: boolean) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ approved })); },
-    close: () => { closed = true; ws.close(); },
-    get ready() { return ws.readyState === WebSocket.OPEN; },
+    close: () => { closed = true; pendingMessages = []; ws.close(); },
+    get ready() { return ws.readyState === WebSocket.OPEN || pendingMessages.length > 0; },
   };
 }

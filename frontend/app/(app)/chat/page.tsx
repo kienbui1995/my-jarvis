@@ -17,6 +17,7 @@ export default function ChatPage() {
   const wsRef = useRef<ReturnType<typeof createWSClient> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef(false);
+  const queuedMsgRef = useRef<string | null>(null);
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [planProgress, setPlanProgress] = useState<{ current: number; total: number; description: string } | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
@@ -56,21 +57,33 @@ export default function ChatPage() {
       }
     };
     wsRef.current?.close();
-    wsRef.current = createWSClient(onMsg, () => {
-      wsRef.current = null;
-      if (pendingRef.current) {
-        finishStreaming("Mất kết nối. Vui lòng thử lại.");
-        pendingRef.current = false;
-        setPlanProgress(null);
+    const client = createWSClient(onMsg, () => {
+      // Only nullify if this client is still the active one
+      if (wsRef.current === client) {
+        wsRef.current = null;
+        if (pendingRef.current) {
+          finishStreaming("Mất kết nối. Vui lòng thử lại.");
+          pendingRef.current = false;
+          setPlanProgress(null);
+        }
       }
     });
+    wsRef.current = client;
     return () => { wsRef.current?.close(); };
   }, [activeConvId]);
 
   const send = useCallback((content: string) => {
-    if (!content.trim() || !wsRef.current?.ready) return;
+    if (!content.trim()) return;
     addUserMessage(content);
-    wsRef.current.send(content);
+    // Try send, retry with backoff if WS not ready yet
+    const trySend = (attempt: number) => {
+      if (wsRef.current) {
+        wsRef.current.send(content);
+      } else if (attempt < 10) {
+        setTimeout(() => trySend(attempt + 1), 300);
+      }
+    };
+    trySend(0);
   }, [addUserMessage]);
 
   const handleApproval = (approved: boolean) => {
