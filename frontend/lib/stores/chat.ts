@@ -40,6 +40,8 @@ export const useChat = create<ChatStore>((set, get) => ({
       set({ conversations: convs });
       if (convs.length > 0 && !get().activeConvId) {
         await get().switchConversation(convs[0].id);
+      } else if (convs.length === 0 && !get().activeConvId) {
+        await get().newConversation();
       }
     } catch {}
   },

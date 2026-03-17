@@ -34,6 +34,7 @@ export default function ChatPage() {
   useEffect(() => { loadConversations(); }, []);
 
   useEffect(() => {
+    if (!activeConvId) return;
     const onMsg = (msg: WSMessage) => {
       if (msg.type === "stream") {
         setPlanProgress(null);

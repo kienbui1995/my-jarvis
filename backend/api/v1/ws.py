@@ -83,8 +83,7 @@ async def ws_chat(ws: WebSocket):
 
     user_id = await _authenticate_ws(ws)
     if not user_id:
-        await ws.send_json({"type": "error", "content": "Unauthorized"})
-        await ws.close(1008)
+        await ws.close(1008, "Unauthorized")
         return
 
     async with async_session() as db:
@@ -130,7 +129,12 @@ async def ws_chat(ws: WebSocket):
                 "conversation_id": str(conv_id), "user_preferences": user_pref_combined,
             }
 
-            full_response = await _run_graph(graph, input_data, config, ws)
+            try:
+                full_response = await _run_graph(graph, input_data, config, ws)
+            except Exception as e:
+                logger.exception(f"Graph error for {user_id}")
+                full_response = "Xin lỗi, đã xảy ra lỗi khi xử lý. Vui lòng thử lại."
+                await ws.send_json({"type": "error", "content": full_response})
 
             await ws.send_json({"type": "done", "content": full_response})
             async with async_session() as db:
