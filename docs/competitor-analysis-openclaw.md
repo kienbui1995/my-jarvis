@@ -123,6 +123,87 @@
 | Revenue | Stripe subscriptions | Sponsors (OpenAI, Vercel) |
 | User pays for | Service subscription | Own LLM API costs |
 
+### Third-party Integration & Extensibility
+
+| Capability | MY JARVIS | OpenClaw |
+|-----------|-----------|----------|
+| **MCP Client** | Yes (V2) — connect MCP servers | Yes (via MCPPorter bridge) |
+| **Custom Code** | Python SDK + AST validation (M38) | Any language, no sandbox |
+| **Marketplace** | Plugin Marketplace (M39) — empty | ClawHub — 13,700+ skills |
+| **Workflow Engine** | Webhook Actions (M40) — event → HTTP | Clawflows + cron + webhooks |
+| **External API** | Public API (M37) — apps gọi vào JARVIS | REST API |
+| **Zapier** | No | Yes — 8,000+ apps via Zapier MCP |
+| **n8n** | No | Yes — n8n-claw, full workflow builder |
+| **No-code connector** | No | Composio — 860+ tools, zero auth code |
+| **Self-writing skills** | No | Yes — agent tự viết code tạo skill mới |
+| **Smart home** | No | Hue, Elgato, Home Assistant |
+| **Note apps** | No | Obsidian, Notion, Apple Notes, Bear |
+| **Social media** | No | Simplified (multi-platform posting) |
+| **Music/Audio** | No | Spotify, Apple Music |
+| **Security model** | AST validation, restricted builtins, 30s timeout | No sandbox — skill có full access |
+| **Malicious risk** | Low (sandboxed) | High — CVE-2026-25253, 341 malicious skills found |
+
+**Verdict**: OpenClaw thắng về breadth (13,700+ skills, Zapier, n8n, Composio). MY JARVIS thắng về security (sandboxed, AST validation). OpenClaw's "god mode" = powerful nhưng là "security nightmare" (42K exposed instances, data exfiltration incidents).
+
+### Integration Architecture So sánh
+
+```
+OpenClaw:
+  User → Gateway → Agent → [Skills | MCP | Zapier | n8n | Composio]
+                              ↓
+                    ClawHub (13,700+ skills, NO sandbox)
+                    Malicious skill = full system access
+
+MY JARVIS:
+  User → Web/Zalo → Agent Pipeline → [24 Built-in Tools | Custom SDK | MCP | Webhooks]
+                                        ↓
+                              Marketplace (sandboxed, AST validated)
+                              Public API (external apps → JARVIS)
+```
+
+### MY JARVIS Integration Gaps (V8 Roadmap)
+
+Để cạnh tranh với OpenClaw về extensibility mà không sacrifice security:
+
+**Priority 1 — MCP Gateway (biggest impact)**
+- Hiện tại: MCP client chỉ connect 1:1 từ settings
+- Cần: MCP Gateway tích hợp sẵn các MCP servers phổ biến (Google Workspace, Notion, GitHub, Slack tools)
+- User chọn enable/disable từng MCP server, không cần cài gì
+- Tương tự Composio nhưng built-in, không cần third-party
+
+**Priority 2 — n8n/Zapier Webhook Bridge**
+- Hiện tại: Webhook Actions (M40) chỉ gửi đi (JARVIS → external)
+- Cần: Nhận webhook từ n8n/Zapier → trigger JARVIS action
+- User flow: Zapier trigger → webhook JARVIS → agent xử lý → response
+- Ví dụ: Email mới → Zapier → JARVIS tóm tắt + phân loại
+
+**Priority 3 — Visual Connector (no-code)**
+- Settings UI: danh sách connectors (Google, Notion, Trello, Shopee...)
+- Click "Kết nối" → OAuth flow → JARVIS tự thêm tools
+- Không cần code, không cần biết MCP là gì
+- Target: non-tech users (chị Hoa persona)
+
+**Priority 4 — Agent Self-Extend (có kiểm soát)**
+- OpenClaw: agent tự viết skill → dangerous
+- MY JARVIS: agent đề xuất skill → user review + approve → sandbox execute
+- Giữ human-in-the-loop cho security, nhưng cho phép AI extend capabilities
+
+### Security Advantage
+
+OpenClaw's extensibility = security nightmare:
+- CVE-2026-25253 (CVSS 8.8) — RCE qua malicious skill
+- 341 malicious skills trên ClawHub (Koi Security audit)
+- Skill có full access: file system, env vars (API keys), network
+- Chinese gov đã cấm OpenClaw trong cơ quan nhà nước (March 2026)
+
+MY JARVIS's approach = secure by default:
+- Custom tools: AST validation block os/sys/subprocess
+- Restricted builtins, 30s execution timeout
+- Sandbox execution, không access file system
+- Plugin review trước khi publish lên marketplace
+
+**Đây là selling point cho B2B**: doanh nghiệp không muốn "god mode" AI, họ cần controllable AI.
+
 ---
 
 ## SWOT Analysis — MY JARVIS vs OpenClaw
@@ -137,7 +218,8 @@
 ### Weaknesses (MY JARVIS)
 - Ít channels hơn (8 vs 20+)
 - Không có native app (macOS/iOS/Android)
-- Skill ecosystem nhỏ (24 vs 3000+)
+- Skill ecosystem nhỏ (24 vs 13,700+), marketplace trống
+- Thiếu no-code connector (Zapier/n8n/Composio)
 - Cloud-only — user phải trust operator với data
 - Single server, không horizontal scaling
 
@@ -175,3 +257,12 @@ Offer cả cloud (current) và self-hosted option. Giải quyết privacy concer
 
 ### 5. Zalo Mini App = killer feature
 80M Zalo users. OpenClaw không thể có Zalo Mini App (cần Zalo developer account VN). Đây là distribution channel mà OpenClaw không thể replicate.
+
+### 6. Secure extensibility = B2B moat
+OpenClaw bị gọi "security nightmare" — CVE-2026-25253, 341 malicious skills, Chinese gov ban. MY JARVIS có sandboxed execution, AST validation. V8 nên mở rộng integration nhưng giữ security:
+- MCP Gateway (curated servers, user toggle)
+- Zapier/n8n webhook bridge (inbound + outbound)
+- Visual connector (no-code OAuth flow)
+- Agent self-extend có HITL approval
+
+**Positioning**: "Powerful như OpenClaw, an toàn cho doanh nghiệp"
