@@ -32,7 +32,7 @@ async def note_save(
             content=full_text,
             embedding=embedding,
             importance=0.7,
-            metadata={"title": title} if title else {},
+            metadata_={"title": title} if title else {},
         )
         db.add(note)
         await db.commit()
@@ -68,7 +68,7 @@ async def note_search(
 
     lines = [f"📝 Tìm thấy {len(results)} ghi chú:"]
     for i, note in enumerate(results, 1):
-        title = note.metadata.get("title", "") if note.metadata else ""
+        title = note.metadata_.get("title", "") if note.metadata_ else ""
         preview = note.content[:100]
         if title:
             lines.append(f"{i}. **{title}**: {preview}")
@@ -100,7 +100,7 @@ async def note_list(
 
     lines = [f"📝 {len(results)} ghi chú gần đây:"]
     for i, note in enumerate(results, 1):
-        title = note.metadata.get("title", "") if note.metadata else ""
+        title = note.metadata_.get("title", "") if note.metadata_ else ""
         preview = note.content[:80]
         date = note.created_at.strftime("%d/%m") if note.created_at else ""
         if title:

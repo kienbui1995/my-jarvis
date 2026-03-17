@@ -1,7 +1,7 @@
 """Memory browser API — list, search, delete user memories."""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -85,9 +85,13 @@ async def delete_memory(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    mem = await db.get(Memory, UUID(memory_id))
+    try:
+        uid = UUID(memory_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
+    mem = await db.get(Memory, uid)
     if not mem or str(mem.user_id) != user_id:
-        return {"error": "Not found"}
+        raise HTTPException(status_code=404, detail="Not found")
     await db.delete(mem)
     await db.commit()
     return {"deleted": True}

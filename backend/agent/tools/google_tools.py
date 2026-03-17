@@ -1,5 +1,7 @@
 """Google integration tools — Calendar + Gmail via OAuth2."""
+import base64
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 from typing import Annotated
 
 import httpx
@@ -143,7 +145,6 @@ async def gmail_read(
 
 def _extract_body(payload: dict) -> str:
     """Extract plain text body from Gmail message payload."""
-    import base64
     if payload.get("mimeType") == "text/plain" and payload.get("body", {}).get("data"):
         return base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="replace")
     for part in payload.get("parts", []):
@@ -174,7 +175,6 @@ async def gmail_reply(
         message_query: tìm email cần reply (ví dụ: "from:boss subject:báo cáo")
         reply_body: nội dung reply
     """
-    import base64
     token, err = await _get_google_client(user_id)
     if not token:
         return err
@@ -209,12 +209,12 @@ async def gmail_reply(
         if not subj.lower().startswith("re:"):
             subj = f"Re: {subj}"
 
-        raw_msg = (
-            f"To: {to}\r\nSubject: {subj}\r\n"
-            f"In-Reply-To: {msg_id}\r\nReferences: {msg_id}\r\n"
-            f"Content-Type: text/plain; charset=utf-8\r\n\r\n{reply_body}"
-        )
-        encoded = base64.urlsafe_b64encode(raw_msg.encode()).decode()
+        msg = MIMEText(reply_body, "plain", "utf-8")
+        msg["To"] = to
+        msg["Subject"] = subj
+        msg["In-Reply-To"] = msg_id
+        msg["References"] = msg_id
+        encoded = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
         resp = await client.post(
             f"{GMAIL_API}/users/me/messages/send",
@@ -239,12 +239,10 @@ async def gmail_send(
     if not token:
         return err
 
-    import base64
-    raw_msg = (
-        f"To: {to}\r\nSubject: {subject}\r\n"
-        f"Content-Type: text/plain; charset=utf-8\r\n\r\n{body}"
-    )
-    encoded = base64.urlsafe_b64encode(raw_msg.encode()).decode()
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["To"] = to
+    msg["Subject"] = subject
+    encoded = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.post(
