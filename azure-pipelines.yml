@@ -2,7 +2,10 @@ trigger:
   branches:
     include: [main]
   tags:
-    include: ['v*.*.*']
+    include:
+      - 'v*.*.*'       # Full deploy (FE + BE + migrate)
+      - 'fe/v*.*.*'    # Frontend only
+      - 'be/v*.*.*'    # Backend + worker + migrate
 
 pr:
   branches:
@@ -40,13 +43,19 @@ stages:
           - script: npm ci && npm run build
             workingDirectory: frontend
 
-  # ── Stage 2: Deploy PROD (tag v*.*.*) ──
-  # NOTE: Add approval gate in ADO:
-  # Pipelines → Environments → production → Approvals and checks
+  # ── Stage 2: Deploy PROD (tag v*.*.* / fe/v*.*.* / be/v*.*.*) ──
+  # v*.*.*    → Full deploy (rsync + migrate + rebuild all)
+  # fe/v*.*.* → Frontend only (rsync + rebuild frontend)
+  # be/v*.*.* → Backend only (rsync + migrate + rebuild backend + worker)
   - stage: Deploy
     displayName: 'Deploy — PROD EC2'
     dependsOn: []
-    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    condition: >
+      or(
+        startsWith(variables['Build.SourceBranch'], 'refs/tags/v'),
+        startsWith(variables['Build.SourceBranch'], 'refs/tags/fe/v'),
+        startsWith(variables['Build.SourceBranch'], 'refs/tags/be/v')
+      )
     jobs:
       - deployment: DeployProd
         displayName: Deploy to Production
@@ -73,6 +82,17 @@ stages:
                     SSH="ssh -i $(sshKey.secureFilePath) $(EC2_USER)@$(EC2_HOST)"
                     APP_DIR="$(EC2_APP_DIR)"
                     COMPOSE="docker compose -p my-jarvis -f docker-compose.yml -f docker-compose.prod.yml"
+                    TAG="$(Build.SourceBranch)"
+
+                    # Detect deploy scope from tag
+                    if echo "$TAG" | grep -q "refs/tags/fe/"; then
+                      SCOPE="frontend"
+                    elif echo "$TAG" | grep -q "refs/tags/be/"; then
+                      SCOPE="backend"
+                    else
+                      SCOPE="all"
+                    fi
+                    echo "🚀 Deploy scope: $SCOPE (tag: $TAG)"
 
                     # ── Safety checks ──
                     if [ -z "$APP_DIR" ] || [ "$APP_DIR" = "/" ] || [ "$APP_DIR" = "/data" ] || [ "$APP_DIR" = "/data/projects" ]; then
@@ -100,24 +120,39 @@ stages:
                     $SSH "docker network inspect tunnel-net >/dev/null 2>&1 || docker network create tunnel-net"
                     $SSH "docker network inspect litellm-proxy_default >/dev/null 2>&1 || docker network create litellm-proxy_default"
 
-                    echo "==> [5/7] Backup DB before migration..."
-                    BACKUP="jarvis_backup_$(date +%Y%m%d_%H%M%S).sql"
-                    $SSH "cd $APP_DIR && $COMPOSE exec -T postgres pg_dump -U \${POSTGRES_USER:-jarvis} \${POSTGRES_DB:-jarvis} > /tmp/$BACKUP 2>/dev/null" || echo "⚠️ DB backup skipped (first deploy or DB not running)"
+                    if [ "$SCOPE" = "backend" ] || [ "$SCOPE" = "all" ]; then
+                      echo "==> [5/7] Backup DB..."
+                      BACKUP="jarvis_backup_$(date +%Y%m%d_%H%M%S).sql"
+                      $SSH "cd $APP_DIR && $COMPOSE exec -T postgres pg_dump -U \${POSTGRES_USER:-jarvis} \${POSTGRES_DB:-jarvis} > /tmp/$BACKUP 2>/dev/null" || echo "⚠️ DB backup skipped"
 
-                    echo "==> [6/7] Run DB migrations..."
-                    $SSH "cd $APP_DIR && $COMPOSE run --rm backend alembic upgrade head"
+                      echo "==> [6/7] Run DB migrations..."
+                      $SSH "cd $APP_DIR && $COMPOSE run --rm backend alembic upgrade head"
+                    else
+                      echo "==> [5/7] Skip DB backup (frontend only)"
+                      echo "==> [6/7] Skip migrations (frontend only)"
+                    fi
 
-                    echo "==> [7/7] Rebuild & restart..."
-                    $SSH "cd $APP_DIR && $COMPOSE up -d --build --remove-orphans"
+                    echo "==> [7/7] Rebuild & restart ($SCOPE)..."
+                    case $SCOPE in
+                      frontend)
+                        $SSH "cd $APP_DIR && $COMPOSE up -d --build --no-deps frontend"
+                        ;;
+                      backend)
+                        $SSH "cd $APP_DIR && $COMPOSE up -d --build --no-deps backend worker"
+                        ;;
+                      all)
+                        $SSH "cd $APP_DIR && $COMPOSE up -d --build --remove-orphans"
+                        ;;
+                    esac
 
-                    echo "==> Verify my-jarvis containers..."
+                    echo "==> Verify containers..."
                     $SSH "cd $APP_DIR && $COMPOSE ps"
 
                     echo "==> Verify sale-ai untouched..."
                     $SSH "docker compose -p sale-ai ps 2>/dev/null | head -5" || true
 
-                    echo "✅ Deploy complete! (DB backup: /tmp/$BACKUP)"
-                  displayName: 'Rsync + Backup + Migrate + Restart'
+                    echo "✅ Deploy complete! (scope=$SCOPE)"
+                  displayName: 'Rsync + Migrate + Restart'
                   env:
                     EC2_HOST: $(EC2_HOST)
 
@@ -125,7 +160,15 @@ stages:
   - stage: SmokeTest
     displayName: Smoke Test
     dependsOn: Deploy
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    condition: >
+      and(
+        succeeded(),
+        or(
+          startsWith(variables['Build.SourceBranch'], 'refs/tags/v'),
+          startsWith(variables['Build.SourceBranch'], 'refs/tags/fe/v'),
+          startsWith(variables['Build.SourceBranch'], 'refs/tags/be/v')
+        )
+      )
     jobs:
       - job: HealthCheck
         displayName: Health check production
