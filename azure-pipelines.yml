@@ -1,49 +1,130 @@
 trigger:
   branches:
     include: [main]
+  tags:
+    include: ['v*.*.*']
 
 pr:
   branches:
     include: [main]
+  paths:
+    exclude: ['**/*.md', 'docs/**']
 
 pool:
   name: Taureau-agent
 
+variables:
+  - name: EC2_HOST
+    value: ''  # TODO: set your EC2 IP
+  - name: EC2_USER
+    value: 'ubuntu'
+  - name: EC2_APP_DIR
+    value: '/data/projects/my-jarvis'
+
 stages:
+  # ── Stage 1: CI (PRs + branch pushes) ──
   - stage: CI
+    displayName: 'CI — Lint & Build'
+    condition: or(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - job: backend_lint
+      - job: Backend
         displayName: Backend Lint
         steps:
           - script: python3 -m pip install --user ruff && python3 -m ruff check . --select E9,F63,F7,F82 --no-fix
             workingDirectory: backend
 
-      - job: frontend_build
+      - job: Frontend
         displayName: Frontend Build
         steps:
           - script: npm ci && npm run build
             workingDirectory: frontend
 
-  # Deploy stage — uncomment when jarvis-server SSH service connection is configured
-  # - stage: Deploy
-  #   dependsOn: CI
-  #   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-  #   jobs:
-  #     - job: deploy
-  #       steps:
-  #         - task: SSH@0
-  #           inputs:
-  #             sshEndpoint: jarvis-server
-  #             runOptions: inline
-  #             inline: |
-  #               cd ~/my-jarvis && git pull origin main && make build && make prod
+  # ── Stage 2: Deploy PROD (tag v*.*.*) ──
+  - stage: Deploy
+    displayName: 'Deploy — PROD EC2'
+    dependsOn: []
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    jobs:
+      - deployment: DeployProd
+        displayName: Deploy to Production
+        timeoutInMinutes: 30
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
 
+                - task: DownloadSecureFile@1
+                  name: sshKey
+                  displayName: Download EC2 SSH key
+                  inputs:
+                    secureFile: 'jarvis-ec2.pem'
+
+                - script: |
+                    chmod 600 $(sshKey.secureFilePath)
+                    mkdir -p ~/.ssh
+                    ssh-keyscan -H $(EC2_HOST) >> ~/.ssh/known_hosts 2>/dev/null
+                    SSH="ssh -i $(sshKey.secureFilePath) $(EC2_USER)@$(EC2_HOST)"
+
+                    echo "==> Rsync source to EC2..."
+                    rsync -az --delete \
+                      --exclude='.git' --exclude='.env*' --exclude='__pycache__' \
+                      --exclude='*.pyc' --exclude='node_modules' --exclude='.next' \
+                      -e "ssh -i $(sshKey.secureFilePath)" \
+                      $(Build.SourcesDirectory)/ \
+                      $(EC2_USER)@$(EC2_HOST):$(EC2_APP_DIR)/
+
+                    echo "==> Run DB migrations..."
+                    $SSH "cd $(EC2_APP_DIR) && \
+                      docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+                      run --rm backend alembic upgrade head"
+
+                    echo "==> Rebuild & restart..."
+                    $SSH "cd $(EC2_APP_DIR) && \
+                      docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+                      up -d --build"
+
+                    echo "==> Deploy complete!"
+                  displayName: 'Rsync + Migrate + Restart'
+
+  # ── Stage 3: Smoke Test (after Deploy) ──
+  - stage: SmokeTest
+    displayName: Smoke Test
+    dependsOn: Deploy
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    jobs:
+      - job: HealthCheck
+        displayName: Health check production
+        timeoutInMinutes: 5
+        steps:
+          - script: |
+              EXPECTED=$(echo "$(Build.SourceBranch)" | sed 's|refs/tags/v||')
+              echo "Expected version: $EXPECTED"
+
+              for i in $(seq 1 12); do
+                RESP=$(curl -sf https://jarvis.pmai.space/health 2>/dev/null || echo "")
+                if [ -n "$RESP" ]; then
+                  ACTUAL=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null)
+                  if [ "$ACTUAL" = "$EXPECTED" ]; then
+                    echo "✅ /health OK — version $ACTUAL"
+                    exit 0
+                  fi
+                fi
+                echo "Attempt $i/12 — retry in 10s..."
+                sleep 10
+              done
+              echo "❌ Health check timed out"; exit 1
+            displayName: Verify health + version
+
+  # ── Stage 4: Sync GitHub (branch push only) ──
   - stage: SyncGitHub
-    dependsOn: CI
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    displayName: Sync GitHub (Community)
+    dependsOn: []
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     jobs:
       - job: sync
-        displayName: Sync to GitHub (Community)
+        displayName: Filter & push to GitHub
         steps:
           - checkout: self
             fetchDepth: 0
@@ -51,41 +132,31 @@ stages:
               git config user.name "MY JARVIS CI"
               git config user.email "ci@jarvis.pmai.space"
 
-              # Read exclude patterns
-              EXCLUDES=""
+              # Filter private files
               while IFS= read -r line; do
-                line="${line%%#*}"
-                line="$(echo "$line" | xargs)"
+                line="${line%%#*}"; line="$(echo "$line" | xargs)"
                 [ -z "$line" ] && continue
-                EXCLUDES="$EXCLUDES $line"
+                [ -e "$line" ] && git rm -rf --cached "$line" >/dev/null 2>&1 && rm -rf "$line" || true
               done < .github-sync-ignore
-
-              # Remove private files
-              for pattern in $EXCLUDES; do
-                [ -e "$pattern" ] && git rm -rf --cached "$pattern" >/dev/null 2>&1 && rm -rf "$pattern" || true
-              done
 
               git add -A
               git commit --allow-empty -m "sync: community edition $(Build.SourceVersion)"
 
-              # Push to GitHub
-              git remote add github https://$(GITHUB_PAT)@github.com/$(GITHUB_REPO).git
+              git remote add github https://$(GITHUB_PAT)@github.com/$(GITHUB_REPO).git 2>/dev/null || true
               git push github HEAD:main --force
               git push github --tags --force 2>/dev/null || true
 
-              # Create GitHub Release if tag exists on this commit
+              # Create GitHub Release if tag
               TAG=$(git tag --points-at HEAD | head -1)
               if [ -n "$TAG" ]; then
-                echo "Creating GitHub Release for $TAG..."
                 BODY=$(sed -n "/^## \[${TAG#v}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
                 [ -z "$BODY" ] && BODY="Release $TAG"
-
                 curl -s -X POST \
                   -H "Authorization: token $(GITHUB_PAT)" \
                   -H "Accept: application/vnd.github.v3+json" \
                   "https://api.github.com/repos/$(GITHUB_REPO)/releases" \
                   -d "$(jq -n --arg tag "$TAG" --arg name "MY JARVIS $TAG" --arg body "$BODY" \
-                    '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false}')"
+                    '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false}')" || true
                 echo "GitHub Release $TAG created"
               fi
             displayName: Filter & push to GitHub
