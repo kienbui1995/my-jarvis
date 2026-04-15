@@ -3,17 +3,27 @@ from langgraph.graph import END, StateGraph
 
 from agent.state import AgentState
 from agent.tools import all_tools
-from agent.nodes.router import router_node
-from agent.nodes.agent_loop import agent_loop_node
-from agent.nodes.response import response_node
-from agent.nodes.post_process import post_process_node
-from agent.nodes.evaluate import evaluate_node
-from agent.nodes.delegate import delegate_node
-from agent.nodes.plan_execute import (
-    planner_node, executor_node, replan_node, synthesize_node,
-    route_after_planner, route_after_executor, route_after_replan,
-)
 from core.config import settings
+
+# Graceful import — Community edition uses basic fallbacks
+try:
+    from agent.nodes.router import router_node
+    from agent.nodes.agent_loop import agent_loop_node
+    from agent.nodes.response import response_node
+    from agent.nodes.post_process import post_process_node
+    from agent.nodes.evaluate import evaluate_node
+    from agent.nodes.delegate import delegate_node
+    from agent.nodes.plan_execute import (
+        planner_node, executor_node, replan_node, synthesize_node,
+        route_after_planner, route_after_executor, route_after_replan,
+    )
+except ImportError:
+    from agent.nodes_community import (  # noqa: F401
+        router_node, agent_loop_node, response_node, post_process_node,
+        evaluate_node, delegate_node, planner_node, executor_node,
+        replan_node, synthesize_node, route_after_planner,
+        route_after_executor, route_after_replan,
+    )
 
 # Build tool lookup
 _tools_by_name = {t.name: t for t in all_tools}

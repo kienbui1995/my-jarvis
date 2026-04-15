@@ -49,7 +49,11 @@ async def _send_to_user(user: User, content: str, notif_type: str = "briefing"):
 
 async def cron_memory_consolidation(ctx: dict):
     """Weekly: compress old memories, merge duplicates, extract key facts."""
-    from memory.consolidation import run_batch_consolidation
+    try:
+        from memory.consolidation import run_batch_consolidation
+    except ImportError:
+        logger.info("Memory consolidation not available (Community edition)")
+        return
     logger.info("Running weekly memory consolidation...")
     results = await run_batch_consolidation()
     total_compressed = sum(r.get("compressed", 0) for r in results)
@@ -59,7 +63,11 @@ async def cron_memory_consolidation(ctx: dict):
 
 async def cron_memory_decay(ctx: dict):
     """Daily: decay stale memories, cleanup very low importance ones."""
-    from memory.consolidation import run_memory_decay
+    try:
+        from memory.consolidation import run_memory_decay
+    except ImportError:
+        logger.info("Memory decay not available (Community edition)")
+        return
     cleaned = await run_memory_decay()
     logger.info(f"Memory decay done: {cleaned} memories cleaned")
 
