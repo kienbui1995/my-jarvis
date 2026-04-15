@@ -22,7 +22,7 @@ class Goal(UserOwnedMixin, Base):
     unit: Mapped[str | None] = mapped_column(String(50))
     deadline: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(20), default="active")  # active, completed, abandoned
-    tags: Mapped[dict | None] = mapped_column(JSONB, default=[])
+    tags: Mapped[dict | None] = mapped_column(JSONB, default=list)
 
 
 # ── M87: Decision Journal ──
@@ -32,7 +32,7 @@ class Decision(UserOwnedMixin, Base):
 
     title: Mapped[str] = mapped_column(String(500))
     context: Mapped[str | None] = mapped_column(Text)  # What situation led to this decision
-    options: Mapped[dict | None] = mapped_column(JSONB, default=[])  # [{option, pros, cons}]
+    options: Mapped[dict | None] = mapped_column(JSONB, default=list)  # [{option, pros, cons}]
     chosen: Mapped[str | None] = mapped_column(Text)  # What was decided
     reasoning: Mapped[str | None] = mapped_column(Text)  # Why
     outcome: Mapped[str | None] = mapped_column(Text)  # What happened (filled later)

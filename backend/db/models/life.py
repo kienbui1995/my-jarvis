@@ -55,7 +55,7 @@ class Contact(UserOwnedMixin, Base):
     anniversary: Mapped[date | None] = mapped_column(Date)
     company: Mapped[str | None] = mapped_column(String(255))
     notes: Mapped[str | None] = mapped_column(Text)
-    preferences: Mapped[dict | None] = mapped_column(JSONB, default={})  # likes, dislikes, gift ideas
+    preferences: Mapped[dict | None] = mapped_column(JSONB, default=dict)  # likes, dislikes, gift ideas
     last_contact: Mapped[date | None] = mapped_column(Date)
 
 
@@ -72,7 +72,7 @@ class Document(UserOwnedMixin, Base):
     issue_date: Mapped[date | None] = mapped_column(Date)
     expiry_date: Mapped[date | None] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, default={})
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, default=dict)
 
 
 # ── M59: Shopping Lists ──

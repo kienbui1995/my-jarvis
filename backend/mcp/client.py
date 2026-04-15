@@ -105,6 +105,18 @@ async def call_tool(server: MCPServer, tool_name: str, arguments: dict) -> str:
         await transport.close()
 
 
+async def call_mcp_tool(user_id: str, server_id: str, tool_name: str, arguments: dict) -> str:
+    """High-level: find user's MCP server by id, call a tool on it."""
+    from db.session import async_session
+    async with async_session() as db:
+        server = (await db.execute(
+            select(MCPServer).where(MCPServer.user_id == UUID(user_id), MCPServer.name == server_id, MCPServer.enabled == True)  # noqa: E712
+        )).scalar_one_or_none()
+    if not server:
+        return ""
+    return await call_tool(server, tool_name, arguments)
+
+
 async def get_mcp_tools(user_id: str, db: AsyncSession) -> list[StructuredTool]:
     """Load all enabled MCP servers for user, discover tools, return as LangChain tools.
     NOTE: Superseded by mcp.loader — kept for backward compatibility."""

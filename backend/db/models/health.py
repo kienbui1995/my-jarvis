@@ -28,7 +28,7 @@ class Medication(UserOwnedMixin, Base):
     name: Mapped[str] = mapped_column(String(255))
     dosage: Mapped[str | None] = mapped_column(String(100))  # "500mg", "1 viên"
     frequency: Mapped[str] = mapped_column(String(50), default="daily")  # daily, twice_daily, weekly
-    times: Mapped[dict | None] = mapped_column(JSONB, default=[])  # ["08:00", "20:00"]
+    times: Mapped[dict | None] = mapped_column(JSONB, default=list)  # ["08:00", "20:00"]
     start_date: Mapped[date | None] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text)
@@ -59,6 +59,6 @@ class BookNote(UserOwnedMixin, Base):
     author: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(20), default="reading")  # reading, finished, wishlist
     rating: Mapped[int | None] = mapped_column(Integer)  # 1-5
-    highlights: Mapped[dict | None] = mapped_column(JSONB, default=[])  # [{text, page, note}]
+    highlights: Mapped[dict | None] = mapped_column(JSONB, default=list)  # [{text, page, note}]
     summary: Mapped[str | None] = mapped_column(Text)
-    tags: Mapped[dict | None] = mapped_column(JSONB, default=[])
+    tags: Mapped[dict | None] = mapped_column(JSONB, default=list)
