@@ -1,0 +1,35 @@
+{
+  "name": "my-jarvis",
+  "slug": "my-jarvis",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "icon": "./assets/icon.png",
+  "scheme": "myjarvis",
+  "userInterfaceStyle": "automatic",
+  "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#1a1a2e" },
+  "assetBundlePatterns": ["**/*"],
+  "ios": {
+    "supportsTablet": true,
+    "bundleIdentifier": "com.pmai.jarvis",
+    "infoPlist": {
+      "NSMicrophoneUsageDescription": "Jarvis cần microphone để nhận lệnh giọng nói",
+      "NSLocationWhenInUseUsageDescription": "Jarvis cần vị trí để gợi ý theo ngữ cảnh",
+      "NSLocationAlwaysAndWhenInUseUsageDescription": "Jarvis cần vị trí nền để nhắc nhở theo địa điểm",
+      "NSFaceIDUsageDescription": "Đăng nhập bằng Face ID"
+    }
+  },
+  "android": {
+    "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#1a1a2e" },
+    "package": "com.pmai.jarvis",
+    "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "USE_BIOMETRIC"]
+  },
+  "plugins": [
+    "expo-router",
+    "expo-secure-store",
+    "expo-local-authentication",
+    "expo-location",
+    "expo-notifications",
+    "expo-av"
+  ],
+  "experiments": { "typedRoutes": true }
+}

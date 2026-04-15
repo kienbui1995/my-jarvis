@@ -6,6 +6,7 @@ from db.models.memory import KnowledgeEntity, KnowledgeRelation, Memory
 from db.models.autonomy import Decision, Goal
 from db.models.health import BookNote, Flashcard, HealthLog, Medication
 from db.models.life import BillReminder, Contact, Document, ShoppingItem, ShoppingList, Subscription
+from db.models.life import BillReminder, Contact, Document, ShoppingItem, ShoppingList, Subscription
 from db.models.preference import UserPreference, UserPromptRule, UserToolPermission
 from db.models.productivity import CalendarEvent, Expense, Task
 from db.models.skill import Skill, SkillExecution
