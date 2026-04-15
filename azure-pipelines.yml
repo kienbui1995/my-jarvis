@@ -15,18 +15,12 @@ stages:
       - job: backend_lint
         displayName: Backend Lint
         steps:
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: "3.12"
-          - script: pip install ruff && ruff check . --select E9,F63,F7,F82 --no-fix
+          - script: python3 -m pip install --user ruff && python3 -m ruff check . --select E9,F63,F7,F82 --no-fix
             workingDirectory: backend
 
       - job: frontend_build
         displayName: Frontend Build
         steps:
-          - task: NodeTool@0
-            inputs:
-              versionSpec: "22.x"
           - script: npm ci && npm run build
             workingDirectory: frontend
 
