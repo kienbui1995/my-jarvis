@@ -1,9 +1,8 @@
 """V11 models — Health & Personal Development."""
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import date
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, Numeric, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, Date, Float, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.models.base import Base, UserOwnedMixin
