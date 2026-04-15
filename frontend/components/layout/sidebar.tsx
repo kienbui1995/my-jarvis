@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, CheckSquare, Calendar, BarChart3, Settings, Menu, X, LogOut, Sun, Moon } from "lucide-react";
+import { MessageSquare, CheckSquare, Calendar, BarChart3, Settings, Menu, X, LogOut, Sun, Moon, Wallet, Users, FileText, ShoppingCart, Heart, Plug, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/stores/auth";
@@ -12,6 +12,13 @@ const NAV = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/calendar", label: "Lịch", icon: Calendar },
+  { href: "/life", label: "Dashboard", icon: Star },
+  { href: "/finance", label: "Tài chính", icon: Wallet },
+  { href: "/health", label: "Sức khỏe", icon: Heart },
+  { href: "/contacts", label: "Danh bạ", icon: Users },
+  { href: "/documents", label: "Giấy tờ", icon: FileText },
+  { href: "/shopping", label: "Mua sắm", icon: ShoppingCart },
+  { href: "/integrations", label: "Kết nối", icon: Plug },
   { href: "/analytics", label: "Thống kê", icon: BarChart3 },
   { href: "/settings", label: "Cài đặt", icon: Settings },
 ];

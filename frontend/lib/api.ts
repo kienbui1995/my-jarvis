@@ -103,3 +103,40 @@ export const api = {
   mcpTools: (id: string) => request<{ tools: Array<{ name: string; description: string }> }>(`/mcp/${id}/tools`),
   mcpHealth: (id: string) => request<{ status: string; tools_count?: number; error?: string }>(`/mcp/${id}/health`),
 };
+
+  // V9: Finance
+  financeDashboard: () => request<{ month_total: number; by_category: Record<string, number>; subscriptions_monthly: number }>("/finance/dashboard"),
+  listBills: () => request<{ data: Array<{ id: string; name: string; amount: number; due_day: number; category: string; enabled: boolean }> }>("/finance/bills"),
+  createBill: (data: { name: string; amount?: number; due_day: number; category?: string }) => request<{ id: string }>("/finance/bills", { method: "POST", body: JSON.stringify(data) }),
+  deleteBill: (id: string) => request<{ ok: boolean }>(`/finance/bills/${id}`, { method: "DELETE" }),
+  listSubs: () => request<{ data: Array<{ id: string; name: string; amount: number; frequency: string; category: string; active: boolean }> }>("/finance/subscriptions"),
+  createSub: (data: { name: string; amount: number; frequency?: string }) => request<{ id: string }>("/finance/subscriptions", { method: "POST", body: JSON.stringify(data) }),
+  deleteSub: (id: string) => request<{ ok: boolean }>(`/finance/subscriptions/${id}`, { method: "DELETE" }),
+  // V9: Contacts
+  listContacts: (relationship?: string) => request<{ data: Array<{ id: string; name: string; phone?: string; email?: string; relationship?: string; birthday?: string; company?: string }> }>(`/contacts/?${relationship ? `relationship=${relationship}` : ""}`),
+  createContact: (data: Record<string, unknown>) => request<{ id: string }>("/contacts/", { method: "POST", body: JSON.stringify(data) }),
+  deleteContact: (id: string) => request<{ ok: boolean }>(`/contacts/${id}`, { method: "DELETE" }),
+  // V9: Documents
+  listDocs: (doc_type?: string) => request<{ data: Array<{ id: string; name: string; doc_type: string; doc_number?: string; expiry_date?: string }> }>(`/documents/?${doc_type ? `doc_type=${doc_type}` : ""}`),
+  createDoc: (data: Record<string, unknown>) => request<{ id: string }>("/documents/", { method: "POST", body: JSON.stringify(data) }),
+  deleteDoc: (id: string) => request<{ ok: boolean }>(`/documents/${id}`, { method: "DELETE" }),
+  // V9: Shopping
+  listShoppingLists: () => request<{ data: Array<{ id: string; name: string; completed: boolean }> }>("/shopping/"),
+  createShoppingList: (name: string) => request<{ id: string }>("/shopping/", { method: "POST", body: JSON.stringify({ name }) }),
+  getShoppingItems: (listId: string) => request<Array<{ id: string; name: string; quantity: number; unit?: string; checked: boolean }>>(`/shopping/${listId}/items`),
+  addShoppingItem: (listId: string, name: string, quantity?: number) => request<{ id: string }>(`/shopping/${listId}/items`, { method: "POST", body: JSON.stringify({ name, quantity }) }),
+  toggleShoppingItem: (listId: string, itemId: string) => request<{ checked: boolean }>(`/shopping/${listId}/items/${itemId}`, { method: "PATCH" }),
+  // V10: Integrations
+  listIntegrations: () => request<{ integrations: Array<{ id: string; name: string; connected: boolean }> }>("/integrations/"),
+  connectIntegration: (id: string, token: string) => request<{ ok: boolean }>("/integrations/connect", { method: "POST", body: JSON.stringify({ integration_id: id, token }) }),
+  disconnectIntegration: (id: string) => request<{ ok: boolean }>(`/integrations/disconnect/${id}`, { method: "POST" }),
+  // V11: Health
+  listHealthLogs: (metric?: string) => request<{ data: Array<{ id: string; log_date: string; metric: string; value: number; unit: string }> }>(`/health/logs?${metric ? `metric=${metric}` : ""}`),
+  createHealthLog: (metric: string, value: number) => request<{ id: string }>("/health/logs", { method: "POST", body: JSON.stringify({ metric, value }) }),
+  listMeds: () => request<{ data: Array<{ id: string; name: string; dosage?: string; frequency: string; active: boolean }> }>("/health/medications"),
+  listBooks: () => request<{ data: Array<{ id: string; title: string; author?: string; status: string; rating?: number }> }>("/health/books"),
+  // V12: Dashboard
+  lifeOverview: () => request<{ week: { tasks_completed: number; spending: number; mood_avg: number | null; active_goals: number } }>("/dashboard/overview"),
+  listGoals: () => request<{ data: Array<{ id: string; title: string; target_value?: number; current_value: number; status: string; deadline?: string }> }>("/dashboard/goals"),
+  createGoal: (title: string, target_value?: number, deadline?: string) => request<{ id: string }>("/dashboard/goals", { method: "POST", body: JSON.stringify({ title, target_value, deadline }) }),
+  updateGoal: (id: string, data: Record<string, unknown>) => request<{ ok: boolean }>(`/dashboard/goals/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
