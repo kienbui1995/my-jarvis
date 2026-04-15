@@ -3,6 +3,7 @@ from db.models.base import Base
 from db.models.conversation import Conversation, Message
 from db.models.evidence import EvidenceLog
 from db.models.memory import KnowledgeEntity, KnowledgeRelation, Memory
+from db.models.health import BookNote, Flashcard, HealthLog, Medication
 from db.models.life import BillReminder, Contact, Document, ShoppingItem, ShoppingList, Subscription
 from db.models.preference import UserPreference, UserPromptRule, UserToolPermission
 from db.models.productivity import CalendarEvent, Expense, Task
@@ -25,6 +26,7 @@ __all__ = [
     "Memory", "KnowledgeEntity", "KnowledgeRelation",
     "Skill", "SkillExecution",
     "BillReminder", "Subscription", "Contact", "Document", "ShoppingList", "ShoppingItem",
+    "HealthLog", "Medication", "Flashcard", "BookNote",
     "LLMUsage", "ProactiveTrigger", "Notification", "MCPServer",
     "GoogleOAuthToken", "APIKey", "CustomTool", "Habit", "HabitLog",
     "EvidenceLog", "UserPreference", "UserPromptRule", "UserToolPermission",
