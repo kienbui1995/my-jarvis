@@ -11,8 +11,7 @@ stages:
     jobs:
       - job: backend_lint
         displayName: Backend Lint
-        pool:
-          vmImage: ubuntu-latest
+        pool: TA-agent
         steps:
           - task: UsePythonVersion@0
             inputs:
@@ -22,8 +21,7 @@ stages:
 
       - job: frontend_lint
         displayName: Frontend Lint
-        pool:
-          vmImage: ubuntu-latest
+        pool: TA-agent
         steps:
           - task: NodeTool@0
             inputs:
@@ -33,8 +31,7 @@ stages:
 
       - job: frontend_build
         displayName: Frontend Build
-        pool:
-          vmImage: ubuntu-latest
+        pool: TA-agent
         steps:
           - task: NodeTool@0
             inputs:
@@ -48,8 +45,7 @@ stages:
     jobs:
       - job: deploy
         displayName: Deploy to Production
-        pool:
-          vmImage: ubuntu-latest
+        pool: TA-agent
         steps:
           - task: SSH@0
             displayName: Deploy via SSH
@@ -68,8 +64,7 @@ stages:
     jobs:
       - job: sync
         displayName: Sync to GitHub (Community)
-        pool:
-          vmImage: ubuntu-latest
+        pool: TA-agent
         steps:
           - checkout: self
             fetchDepth: 0
