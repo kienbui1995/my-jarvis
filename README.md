@@ -25,12 +25,20 @@ Zalo OA / Zalo Bot / Telegram / WhatsApp / Slack / Discord / Web / Mini App
 ## Quick Start
 
 ```bash
+# Option 1: From source
 cp .env.example .env
 # Fill in API keys in .env
 
 make build
 make dev             # Dev: backend :8002, frontend :3002
 make db-upgrade      # Apply migrations
+
+# Option 2: Pre-built images (no build needed)
+cp .env.example .env
+# Fill in API keys + passwords in .env
+
+docker compose -f docker-compose.community.yml up -d
+# Open http://localhost:3002
 ```
 
 ## Production
