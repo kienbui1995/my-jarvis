@@ -1,45 +1,36 @@
 # Files/dirs to EXCLUDE when syncing to public GitHub repo.
-# Strategy: Open Core — public framework, private intelligence.
+# Strategy: Community = full personal AI assistant (open source)
+#           Enterprise = business features (separate repo)
+#
+# Community gets ALL intelligence, tools, channels, mobile.
+# Only internal ops and enterprise code are excluded.
 
 # ═══════════════════════════════════════════════════════
-# CORE INTELLIGENCE (proprietary — the "secret sauce")
+# INTERNAL OPS (not relevant to community users)
 # ═══════════════════════════════════════════════════════
 
-# Agent intelligence pipeline (router, planner, skills matching, evaluation)
-backend/agent/nodes/
-
-# Memory intelligence (consolidation, decay, skill learning, preference extraction, KG)
-backend/memory/
-
-# Proactive trigger logic (morning briefing, pattern detection, insights)
-backend/services/handlers/
-
-# Smart LLM routing (model selection by complexity, budget, fallback chains)
-backend/llm/router.py
-
-# Injection detection
-backend/core/injection.py
-
-# ═══════════════════════════════════════════════════════
-# INTERNAL OPS
-# ═══════════════════════════════════════════════════════
-
-# CI/CD
+# CI/CD (Azure DevOps specific)
 azure-pipelines.yml
 
-# Infrastructure secrets & deployment
+# Infrastructure deployment configs
 infra/cloudflared/
 .env.prod
 setup-tunnel.sh
 
-# Internal docs
+# Internal business docs
 docs/competitor-analysis-openclaw.md
 docs/superpowers/
-docs/DEERFLOW_IMPLEMENTATION.md
 
-# AI assistant configs
+# AI coding assistant configs
 .claude/
 CLAUDE.md
 MIGRATE_API_ERROR_STANDARD.md
 zalo_bot_setup.py
-backend/docs/FOUNDATION_EXAMPLES.py
+
+# ═══════════════════════════════════════════════════════
+# ENTERPRISE FEATURES (separate repo/package)
+# ═══════════════════════════════════════════════════════
+
+# Multi-tenant / team features (when implemented)
+# backend/enterprise/
+# frontend/src/enterprise/

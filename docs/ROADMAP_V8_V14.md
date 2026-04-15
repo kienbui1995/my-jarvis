@@ -198,19 +198,30 @@ Trong túi 24/7.
 
 ## V14.0.0 — Platform & Ecosystem (Apr 30)
 
-Từ product → platform.
+Từ product → platform. **Split: Community + Enterprise.**
+
+### Community (open source)
 
 | # | Module | Mô tả |
 |---|--------|-------|
-| M96 | Multi-user/Family | Shared calendar, shopping list, family expenses |
-| M97 | Skill Marketplace | Publish skills → others install |
-| M98 | White-label API | Businesses dùng Jarvis engine cho chatbot riêng |
-| M99 | VN Gov Services | Tra cứu BHXH, thuế, đăng ký xe, lịch tiêm |
-| M100 | AI Financial Advisor | Phân tích chi tiêu → gợi ý tiết kiệm/đầu tư |
-| M101 | Agent-to-Agent | Jarvis nói chuyện với Jarvis khác (schedule, split bill) |
-| M102 | Automation Builder | Visual workflow: IF trigger THEN action (no-code) |
+| M96 | VN Gov Services | Tra cứu BHXH, thuế, đăng ký xe, lịch tiêm |
+| M97 | AI Financial Advisor | Phân tích chi tiêu cá nhân → gợi ý tiết kiệm/đầu tư |
 
-**Milestone**: 100+ modules. Platform cho mọi người.
+### Enterprise (proprietary — separate repo/package)
+
+| # | Module | Mô tả |
+|---|--------|-------|
+| E1 | Multi-tenant / Teams | Team workspaces, shared calendar, tasks, expenses |
+| E2 | RBAC | Role-based access: admin, manager, member |
+| E3 | SSO | SAML 2.0, OIDC (Google Workspace, Azure AD) |
+| E4 | Admin Dashboard | User management, usage analytics, cost control |
+| E5 | White-label API | Businesses embed Jarvis engine cho chatbot riêng |
+| E6 | Automation Builder | Visual workflow: IF trigger THEN action (no-code) |
+| E7 | Agent-to-Agent | Inter-org communication protocol |
+| E8 | Skill Marketplace | Enterprise approval workflow for shared skills |
+| E9 | Compliance | Data retention, audit export, GDPR |
+
+**Milestone**: Community = trợ lý cá nhân hoàn chỉnh. Enterprise = nền tảng cho doanh nghiệp.
 
 ---
 
