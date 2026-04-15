@@ -61,3 +61,44 @@ stages:
                 git pull origin main
                 make build
                 make prod
+
+  - stage: SyncGitHub
+    dependsOn: CI
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: sync
+        displayName: Sync to GitHub (Community)
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 0
+          - script: |
+              git config user.name "MY JARVIS CI"
+              git config user.email "ci@jarvis.pmai.space"
+
+              # Read exclude patterns
+              EXCLUDES=""
+              while IFS= read -r line; do
+                line="${line%%#*}"
+                line="$(echo "$line" | xargs)"
+                [ -z "$line" ] && continue
+                EXCLUDES="$EXCLUDES $line"
+              done < .github-sync-ignore
+
+              # Remove private files
+              for pattern in $EXCLUDES; do
+                [ -e "$pattern" ] && git rm -rf --cached "$pattern" >/dev/null 2>&1 && rm -rf "$pattern" || true
+              done
+
+              git add -A
+              git commit --allow-empty -m "sync: community edition $(Build.SourceVersion)"
+
+              # Push to GitHub
+              git remote add github https://$(GITHUB_PAT)@github.com/$(GITHUB_REPO).git
+              git push github HEAD:main --force
+              git push github --tags --force 2>/dev/null || true
+            displayName: Filter & push to GitHub
+            env:
+              GITHUB_PAT: $(GITHUB_PAT)
+              GITHUB_REPO: $(GITHUB_REPO)
