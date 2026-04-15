@@ -15,7 +15,7 @@ pool:
 
 variables:
   - name: EC2_HOST
-    value: ''  # TODO: set your EC2 IP
+    value: '54.255.181.145'
   - name: EC2_USER
     value: 'ubuntu'
   - name: EC2_APP_DIR
@@ -59,13 +59,17 @@ stages:
                   name: sshKey
                   displayName: Download EC2 SSH key
                   inputs:
-                    secureFile: 'jarvis-ec2.pem'
+                    secureFile: 'ec2-prod.pem'
 
                 - script: |
                     chmod 600 $(sshKey.secureFilePath)
                     mkdir -p ~/.ssh
                     ssh-keyscan -H $(EC2_HOST) >> ~/.ssh/known_hosts 2>/dev/null
                     SSH="ssh -i $(sshKey.secureFilePath) $(EC2_USER)@$(EC2_HOST)"
+                    COMPOSE="docker compose -p my-jarvis -f docker-compose.yml -f docker-compose.prod.yml"
+
+                    echo "==> Ensure app directory exists..."
+                    $SSH "mkdir -p $(EC2_APP_DIR)"
 
                     echo "==> Rsync source to EC2..."
                     rsync -az --delete \
@@ -75,15 +79,17 @@ stages:
                       $(Build.SourcesDirectory)/ \
                       $(EC2_USER)@$(EC2_HOST):$(EC2_APP_DIR)/
 
-                    echo "==> Run DB migrations..."
-                    $SSH "cd $(EC2_APP_DIR) && \
-                      docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-                      run --rm backend alembic upgrade head"
+                    echo "==> Verify .env.prod exists..."
+                    $SSH "test -f $(EC2_APP_DIR)/.env.prod" || { echo "❌ .env.prod missing on EC2! Create it first."; exit 1; }
 
-                    echo "==> Rebuild & restart..."
-                    $SSH "cd $(EC2_APP_DIR) && \
-                      docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-                      up -d --build"
+                    echo "==> Run DB migrations..."
+                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE run --rm backend alembic upgrade head"
+
+                    echo "==> Rebuild & restart (my-jarvis only, sale-ai untouched)..."
+                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE up -d --build"
+
+                    echo "==> Verify containers..."
+                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE ps --format 'table {{.Name}}\t{{.Status}}'"
 
                     echo "==> Deploy complete!"
                   displayName: 'Rsync + Migrate + Restart'
