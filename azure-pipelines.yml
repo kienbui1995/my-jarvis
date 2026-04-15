@@ -62,36 +62,64 @@ stages:
                     secureFile: 'ec2-prod.pem'
 
                 - script: |
+                    set -euo pipefail
+
                     chmod 600 $(sshKey.secureFilePath)
                     mkdir -p ~/.ssh
                     ssh-keyscan -H $(EC2_HOST) >> ~/.ssh/known_hosts 2>/dev/null
                     SSH="ssh -i $(sshKey.secureFilePath) $(EC2_USER)@$(EC2_HOST)"
+                    SCP="scp -i $(sshKey.secureFilePath)"
+                    APP_DIR="$(EC2_APP_DIR)"
                     COMPOSE="docker compose -p my-jarvis -f docker-compose.yml -f docker-compose.prod.yml"
 
-                    echo "==> Ensure app directory exists..."
-                    $SSH "mkdir -p $(EC2_APP_DIR)"
+                    # ── Safety checks ──
+                    if [ -z "$APP_DIR" ] || [ "$APP_DIR" = "/" ] || [ "$APP_DIR" = "/data" ] || [ "$APP_DIR" = "/data/projects" ]; then
+                      echo "❌ FATAL: EC2_APP_DIR is empty or too broad: '$APP_DIR'"
+                      exit 1
+                    fi
 
-                    echo "==> Rsync source to EC2..."
+                    echo "==> [1/6] Ensure app directory..."
+                    $SSH "mkdir -p $APP_DIR"
+
+                    echo "==> [2/6] Rsync source to EC2 ($APP_DIR)..."
                     rsync -az --delete \
                       --exclude='.git' --exclude='.env*' --exclude='__pycache__' \
                       --exclude='*.pyc' --exclude='node_modules' --exclude='.next' \
+                      --exclude='.claude' --exclude='azure-pipelines.yml' \
                       -e "ssh -i $(sshKey.secureFilePath)" \
                       $(Build.SourcesDirectory)/ \
-                      $(EC2_USER)@$(EC2_HOST):$(EC2_APP_DIR)/
+                      $(EC2_USER)@$(EC2_HOST):$APP_DIR/
 
-                    echo "==> Verify .env.prod exists..."
-                    $SSH "test -f $(EC2_APP_DIR)/.env.prod" || { echo "❌ .env.prod missing on EC2! Create it first."; exit 1; }
+                    echo "==> [3/6] Verify .env.prod..."
+                    $SSH "test -f $APP_DIR/.env.prod" || {
+                      echo "❌ .env.prod missing! Create on EC2 first:"
+                      echo "   ssh ubuntu@$(EC2_HOST) 'nano $APP_DIR/.env.prod'"
+                      exit 1
+                    }
 
-                    echo "==> Run DB migrations..."
-                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE run --rm backend alembic upgrade head"
+                    echo "==> [4/6] Verify external networks exist..."
+                    $SSH "docker network inspect tunnel-net >/dev/null 2>&1" || {
+                      echo "⚠️ Creating tunnel-net network..."
+                      $SSH "docker network create tunnel-net"
+                    }
+                    $SSH "docker network inspect litellm-proxy_default >/dev/null 2>&1" || {
+                      echo "⚠️ Creating litellm-proxy_default network..."
+                      $SSH "docker network create litellm-proxy_default"
+                    }
 
-                    echo "==> Rebuild & restart (my-jarvis only, sale-ai untouched)..."
-                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE up -d --build"
+                    echo "==> [5/6] Run DB migrations..."
+                    $SSH "cd $APP_DIR && $COMPOSE run --rm backend alembic upgrade head"
+
+                    echo "==> [6/6] Rebuild & restart (my-jarvis only)..."
+                    $SSH "cd $APP_DIR && $COMPOSE up -d --build --remove-orphans"
 
                     echo "==> Verify containers..."
-                    $SSH "cd $(EC2_APP_DIR) && $COMPOSE ps --format 'table {{.Name}}\t{{.Status}}'"
+                    $SSH "cd $APP_DIR && $COMPOSE ps"
 
-                    echo "==> Deploy complete!"
+                    echo "==> Verify sale-ai untouched..."
+                    $SSH "docker compose -p sale-ai ps --format 'table {{.Name}}\t{{.Status}}' 2>/dev/null | head -5" || true
+
+                    echo "✅ Deploy complete!"
                   displayName: 'Rsync + Migrate + Restart'
 
   # ── Stage 3: Smoke Test (after Deploy) ──
