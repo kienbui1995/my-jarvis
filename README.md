@@ -4,7 +4,7 @@
 
 Vietnamese-first agentic personal AI assistant — 8 channels, smart LLM routing, persistent memory, proactive automation, developer ecosystem.
 
-**V7.0.0** — 44 modules, 24 tools, 8 channels. [Full changelog](CHANGELOG.md) | [Project summary](docs/PROJECT_SUMMARY_V7.md)
+**V8.0.0** — 50 modules, 28 tools, 8 channels. [Full changelog](CHANGELOG.md) | [Project summary](docs/PROJECT_SUMMARY_V7.md) | [Roadmap V8-V14](docs/ROADMAP_V8_V14.md)
 
 ## Architecture
 

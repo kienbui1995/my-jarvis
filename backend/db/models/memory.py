@@ -19,6 +19,7 @@ class Memory(Base):
     content: Mapped[str] = mapped_column(Text)
     embedding = mapped_column(Vector(3072), nullable=True)
     importance: Mapped[float] = mapped_column(Float, default=0.5)
+    access_count: Mapped[int] = mapped_column(default=0)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_accessed: Mapped[datetime | None] = mapped_column(DateTime)

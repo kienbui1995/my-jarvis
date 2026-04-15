@@ -1,32 +1,38 @@
-"""Tool registry — all tools available to the agent."""
-from agent.tools.browser_tools import browse_click, browse_fill, browse_screenshot, browse_web
-from agent.tools.calendar_tools import calendar_create, calendar_list
-from agent.tools.finance_tools import budget_check, expense_log
-from agent.tools.google_tools import gmail_read, gmail_reply, gmail_send, google_calendar_list
-from agent.tools.graph_tools import graph_search
-from agent.tools.memory_tools import memory_save, memory_search
-from agent.tools.news_tools import news_vn
-from agent.tools.note_tools import note_list, note_save, note_search
-from agent.tools.task_tools import task_create, task_list, task_update
-from agent.tools.vision_tools import analyze_file, ocr_file
-from agent.tools.weather_tools import weather_vn
-from agent.tools.web_tools import summarize_url, web_search
+"""Tool registry — auto-discovers all @tool decorated functions in agent/tools/.
 
-all_tools = [
-    task_create, task_list, task_update,
-    calendar_create, calendar_list,
-    memory_save, memory_search,
-    web_search, summarize_url,
-    expense_log, budget_check,
-    graph_search,
-    # M15: Vietnamese Service Integrations
-    weather_vn,
-    news_vn,
-    google_calendar_list, gmail_read, gmail_send, gmail_reply,
-    # M17: Vision
-    analyze_file, ocr_file,
-    # M18: Browser Automation
-    browse_web, browse_click, browse_fill, browse_screenshot,
-    # Notes
-    note_save, note_search, note_list,
-]
+New tools: just create a file in agent/tools/, use @tool decorator. No manual registration needed.
+"""
+import importlib
+import logging
+import pkgutil
+from pathlib import Path
+
+from langchain_core.tools import BaseTool
+
+logger = logging.getLogger(__name__)
+
+
+def _discover_tools() -> list[BaseTool]:
+    """Scan agent/tools/ modules and collect all BaseTool instances."""
+    tools = []
+    package_dir = Path(__file__).parent
+    seen_names = set()
+
+    for module_info in pkgutil.iter_modules([str(package_dir)]):
+        if module_info.name.startswith("_"):
+            continue
+        try:
+            mod = importlib.import_module(f"agent.tools.{module_info.name}")
+            for attr_name in dir(mod):
+                obj = getattr(mod, attr_name)
+                if isinstance(obj, BaseTool) and obj.name not in seen_names:
+                    tools.append(obj)
+                    seen_names.add(obj.name)
+        except Exception:
+            logger.warning(f"Failed to load tool module: agent.tools.{module_info.name}", exc_info=True)
+
+    logger.info(f"Discovered {len(tools)} tools from {len(list(pkgutil.iter_modules([str(package_dir)])))} modules")
+    return tools
+
+
+all_tools = _discover_tools()

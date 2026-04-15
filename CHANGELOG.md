@@ -1,5 +1,47 @@
 # Changelog
 
+## [8.0.0] — 2026-04-15
+
+### Nền tảng Thông minh (6 modules: M45-M50)
+
+**Memory Intelligence (M45-M46)**
+- **M45 Memory Consolidation**: Weekly ARQ cron job — batch compress old memories, merge duplicates, extract key facts via LLM. `run_batch_consolidation()` processes all users.
+- **M46 Memory Decay**: Daily cron — decay importance 5%/cycle for memories >14 days stale (including never-accessed), cleanup memories <0.15 importance + >30 days + zero access. New `access_count` column on Memory model.
+
+**Skills Learning Loop (M47)** — Hermes Agent-inspired
+- Agent self-learns reusable patterns from complex tasks (plan-and-execute ≥3 steps)
+- `Skill` + `SkillExecution` DB models with trigger_keywords, steps_template, usage/success tracking
+- Post-task extraction: LLM analyzes if task pattern is reusable → creates Skill
+- Skill matching in router: before planning, check if existing skill matches → skip LLM planning, use adapted_steps
+- Wired into: router_node (match), planner_node (shortcut), post_process_node (extract/record)
+
+**Deep Research (M48)**
+- `deep_research` agent tool: 4-step pipeline (plan 3-5 queries → parallel web search → verify/cross-check facts → synthesize with citations + confidence scores)
+- Auto-discovered via new tool auto-discovery system
+
+**MCP Gateway Hardening (M49)**
+- Prompt injection scanning in MCP tool descriptions (block suspicious patterns)
+- Tool name shadowing protection (MCP tools cannot overwrite built-in tools)
+- Existing: proxy sanitize, rate limit per tier, SSRF protection, audit logging, curated registry (6 servers)
+
+**Document Generation (M50)**
+- `generate_document` agent tool: 4 templates (report, email, summary, meeting_notes)
+- LLM-powered Vietnamese document generation
+
+### Foundation (5 utilities for V9-V14 velocity)
+- **TimestampMixin + UserOwnedMixin**: New models inherit id + user_id FK + created_at + updated_at automatically
+- **CRUDService**: Generic async create/get/list/update/delete with pagination for any user-owned model
+- **PaginationParams + paginated_response**: Standard `{data, meta: {page, total, pages}}` envelope
+- **Auto-discover tools**: Scan `agent/tools/` modules, collect all `@tool` decorated functions. No manual registration.
+- **Auto-discover routes**: Scan `api/v1/` modules, register routers automatically. No manual `include_router()`.
+
+### Stats
+- Tool modules: 12 → 14 (+research_tools, +document_tools)
+- DB models: 22 → 24 (+Skill, +SkillExecution)
+- Migrations: 11 → 12
+- Feature flags: 13 → 14 (+SKILL_LEARNING_ENABLED)
+- ARQ cron jobs: 7 → 9 (+memory_decay daily, +memory_consolidation weekly)
+
 ## [7.0.0] — 2026-03-16
 
 ### Channel Expansion (5 → 8 channels)

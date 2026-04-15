@@ -1,4 +1,4 @@
-"""MCP Proxy — sanitize, rate limit, SSRF protection, audit logging."""
+"""MCP Proxy — sanitize, rate limit, SSRF protection, audit logging, security hardening."""
 import html
 import logging
 import re
@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 MAX_OUTPUT_CHARS = 5000
 BLOCKED_PATTERNS = re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
 TIER_LIMITS = {"free": 10, "pro": 60, "pro_plus": 120}
+
+# V8: Prompt injection patterns in tool descriptions (Hermes-inspired)
+INJECTION_PATTERNS = re.compile(
+    r"(ignore previous|ignore all|system prompt|you are now|forget your|override instruction|disregard)",
+    re.IGNORECASE,
+)
 
 
 def _is_internal_url(url: str) -> bool:
@@ -56,7 +62,18 @@ async def proxy_discover_tools(server: MCPServer) -> list[dict]:
     if server.transport == "sse" and _is_internal_url(url):
         logger.warning(f"MCP SSRF blocked: {server.name} → {url}")
         return []
-    return await raw_discover_tools(server)
+    tools = await raw_discover_tools(server)
+
+    # V8: Scan tool descriptions for prompt injection patterns
+    safe_tools = []
+    for t in tools:
+        desc = t.get("description", "")
+        if INJECTION_PATTERNS.search(desc):
+            logger.warning(f"MCP tool description injection blocked: {server.name}/{t.get('name')} — '{desc[:100]}'")
+            continue
+        safe_tools.append(t)
+
+    return safe_tools
 
 
 async def proxy_call_tool(

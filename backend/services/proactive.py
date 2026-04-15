@@ -45,6 +45,25 @@ async def _send_to_user(user: User, content: str, notif_type: str = "briefing"):
         await DiscordAdapter().send_response(user.discord_id, resp)
 
 
+# ── Memory maintenance cron jobs (M45 + M46) ────────────────
+
+async def cron_memory_consolidation(ctx: dict):
+    """Weekly: compress old memories, merge duplicates, extract key facts."""
+    from memory.consolidation import run_batch_consolidation
+    logger.info("Running weekly memory consolidation...")
+    results = await run_batch_consolidation()
+    total_compressed = sum(r.get("compressed", 0) for r in results)
+    total_deleted = sum(r.get("deleted", 0) for r in results)
+    logger.info(f"Memory consolidation done: {len(results)} users, {total_compressed} compressed, {total_deleted} deleted")
+
+
+async def cron_memory_decay(ctx: dict):
+    """Daily: decay stale memories, cleanup very low importance ones."""
+    from memory.consolidation import run_memory_decay
+    cleaned = await run_memory_decay()
+    logger.info(f"Memory decay done: {cleaned} memories cleaned")
+
+
 # ── Cron jobs that emit events into the bus ──────────────────
 
 async def cron_morning_briefing(ctx: dict):
@@ -131,6 +150,8 @@ class WorkerSettings:
         cron(cron_scheduled_agents, hour=1, minute=0),    # 08:00 VN
         cron(cron_scheduled_agents, hour=5, minute=0),    # 12:00 VN
         cron(cron_scheduled_agents, hour=11, minute=0),   # 18:00 VN
+        cron(cron_memory_decay, hour=3, minute=0),        # M46: daily 10:00 VN
+        cron(cron_memory_consolidation, weekday=6, hour=3, minute=30),  # M45: Sunday 10:30 VN
     ]
 
     @staticmethod

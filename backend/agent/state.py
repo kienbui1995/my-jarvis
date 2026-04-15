@@ -34,3 +34,7 @@ class AgentState(MessagesState):
     step_results: list[str] = []
     replan_count: int = 0
     user_preferences: str = ""
+
+    # --- v4 fields (V8: skills learning) ---
+    matched_skill: dict = {}
+    skill_execution_start: float = 0.0

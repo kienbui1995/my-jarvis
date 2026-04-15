@@ -56,6 +56,10 @@ async def load_mcp_tools(user_id: str, tier: str, conv_id: str, db: AsyncSession
     tools = []
     seen_names = set()
 
+    # V8: Prevent MCP tools from shadowing built-in tools (Hermes-inspired)
+    from agent.tools import all_tools as builtin_tools
+    builtin_names = {t.name for t in builtin_tools}
+
     for srv, disc in zip(servers, discoveries):
         if isinstance(disc, Exception):
             logger.warning(f"MCP discovery failed for {srv.name}: {disc}")
@@ -64,6 +68,9 @@ async def load_mcp_tools(user_id: str, tier: str, conv_id: str, db: AsyncSession
             tool_name = f"mcp_{srv.name}_{t['name']}"
             if tool_name in seen_names:
                 tool_name = f"{tool_name}_{str(srv.id)[:4]}"
+            if tool_name in builtin_names:
+                logger.warning(f"MCP tool name shadows built-in: {tool_name} — skipped")
+                continue
             seen_names.add(tool_name)
 
             all_tool_defs.append({

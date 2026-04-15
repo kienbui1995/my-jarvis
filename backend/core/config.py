@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     EVIDENCE_LOGGING_ENABLED: bool = True
     SUPERVISION_ENABLED: bool = True
     TOOL_PERMISSIONS_ENABLED: bool = True
+    SKILL_LEARNING_ENABLED: bool = True
 
     # MCP Gateway (V8)
     MCP_GATEWAY_ENABLED: bool = True

@@ -8,32 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 import core.redis as redis_pool
-from api.v1 import (
-    agent_tasks,
-    analytics,
-    audit,
-    auth,
-    billing,
-    calendar,
-    chat,
-    conversations,
-    engagement,
-    feedback,
-    files,
-    google_connect,
-    marketplace,
-    mcp,
-    memories,
-    notifications,
-    preferences,
-    tasks,
-    triggers,
-    users,
-    voice,
-    webhooks,
-    ws,
-)
-from api.v1 import settings as settings_api
 from core.config import settings
 from core.headers import SecurityHeadersMiddleware
 from core.rate_limit import RateLimitMiddleware
@@ -102,38 +76,61 @@ async def add_version_header(request, call_next):
     response.headers["X-App-Version"] = APP_VERSION
     return response
 
-# --- Routes ---
-_v1 = "/api/v1"
-app.include_router(webhooks.router, prefix=f"{_v1}/webhooks", tags=["webhooks"])
-app.include_router(auth.router, prefix=f"{_v1}/auth", tags=["auth"])
-app.include_router(users.router, prefix=f"{_v1}/users", tags=["users"])
-app.include_router(tasks.router, prefix=f"{_v1}/tasks", tags=["tasks"])
-app.include_router(calendar.router, prefix=f"{_v1}/calendar", tags=["calendar"])
-app.include_router(analytics.router, prefix=f"{_v1}/analytics", tags=["analytics"])
-app.include_router(ws.router, prefix=_v1, tags=["websocket"])
-app.include_router(mcp.router, prefix=f"{_v1}/mcp", tags=["mcp"])
-app.include_router(notifications.router, prefix=_v1, tags=["notifications"])
-app.include_router(conversations.router, prefix=f"{_v1}/conversations", tags=["conversations"])
-app.include_router(settings_api.router, prefix=f"{_v1}/settings", tags=["settings"])
-app.include_router(audit.router, prefix=f"{_v1}/audit", tags=["audit"])
-app.include_router(preferences.router, prefix=f"{_v1}/settings", tags=["preferences"])
-app.include_router(feedback.router, prefix=_v1, tags=["feedback"])
-app.include_router(voice.router, prefix=f"{_v1}/voice", tags=["voice"])
-app.include_router(triggers.router, prefix=f"{_v1}/triggers", tags=["triggers"])
-app.include_router(google_connect.router, prefix=f"{_v1}/google", tags=["google"])
-app.include_router(chat.router, prefix=_v1, tags=["chat"])
-app.include_router(files.router, prefix=f"{_v1}/files", tags=["files"])
-app.include_router(billing.router, prefix=f"{_v1}/billing", tags=["billing"])
-app.include_router(memories.router, prefix=f"{_v1}/memories", tags=["memories"])
-app.include_router(agent_tasks.router, prefix=f"{_v1}/agent-tasks", tags=["agent-tasks"])
-app.include_router(marketplace.router, prefix=f"{_v1}/marketplace", tags=["marketplace"])
-app.include_router(engagement.router, prefix=_v1, tags=["engagement"])
+# --- Routes (auto-discovered) ---
+def _register_routes(app: FastAPI):
+    """Auto-discover and register all API v1 routers.
 
-# Public API (developer access via API keys)
-# Import here to avoid circular deps (public routes import agent graph)
-from api.public.routes import router as public_router  # noqa: E402
+    Convention: each file in api/v1/ exports `router = APIRouter()`.
+    Route prefix derived from filename: tasks.py → /api/v1/tasks.
+    Special cases handled via ROUTE_OVERRIDES.
+    """
+    import importlib
+    import pkgutil
+    from pathlib import Path
 
-app.include_router(public_router, prefix="/api/public/v1", tags=["public-api"])
+    ROUTE_OVERRIDES = {
+        "ws": {"prefix": "/api/v1", "tags": ["websocket"]},
+        "webhooks": {"prefix": "/api/v1/webhooks", "tags": ["webhooks"]},
+        "google_connect": {"prefix": "/api/v1/google", "tags": ["google"]},
+        "settings": {"prefix": "/api/v1/settings", "tags": ["settings"]},
+        "preferences": {"prefix": "/api/v1/settings", "tags": ["preferences"]},
+        "chat": {"prefix": "/api/v1", "tags": ["chat"]},
+        "feedback": {"prefix": "/api/v1", "tags": ["feedback"]},
+        "notifications": {"prefix": "/api/v1", "tags": ["notifications"]},
+        "engagement": {"prefix": "/api/v1", "tags": ["engagement"]},
+        "agent_tasks": {"prefix": "/api/v1/agent-tasks", "tags": ["agent-tasks"]},
+    }
+
+    v1_dir = Path(__file__).parent / "api" / "v1"
+    count = 0
+    for mod_info in pkgutil.iter_modules([str(v1_dir)]):
+        if mod_info.name.startswith("_"):
+            continue
+        try:
+            mod = importlib.import_module(f"api.v1.{mod_info.name}")
+            r = getattr(mod, "router", None)
+            if r is None:
+                continue
+            overrides = ROUTE_OVERRIDES.get(mod_info.name, {})
+            prefix = overrides.get("prefix", f"/api/v1/{mod_info.name.replace('_', '-')}")
+            tags = overrides.get("tags", [mod_info.name.replace("_", "-")])
+            app.include_router(r, prefix=prefix, tags=tags)
+            count += 1
+        except Exception:
+            logger.exception(f"Failed to load API module: api.v1.{mod_info.name}")
+
+    # Public API (developer access via API keys)
+    try:
+        from api.public.routes import router as public_router
+        app.include_router(public_router, prefix="/api/public/v1", tags=["public-api"])
+        count += 1
+    except Exception:
+        logger.warning("Public API routes not loaded")
+
+    logger.info(f"Registered {count} API routers")
+
+
+_register_routes(app)
 
 
 @app.get("/health")

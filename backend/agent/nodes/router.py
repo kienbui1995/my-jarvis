@@ -154,6 +154,21 @@ async def router_node(state: AgentState) -> dict:
             ctx = await build_context(user_id, query_emb, db)
             hot, cold = ctx["hot_memory"], ctx["cold_memory"]
 
+    # V8: Skill matching — check if existing skill matches before planning
+    matched_skill = {}
+    skill_start = 0.0
+    if user_id and decision.needs_planning and settings.SKILL_LEARNING_ENABLED:
+        try:
+            from memory.skill_learning import match_skill
+            import time
+            async with async_session() as db:
+                matched_skill = await match_skill(user_id, last_msg, db) or {}
+            if matched_skill:
+                skill_start = time.time()
+                logger.info(f"Skill matched: {matched_skill.get('skill_name')} (conf={matched_skill.get('confidence')})")
+        except Exception:
+            logger.debug("Skill matching failed", exc_info=True)
+
     # V8: Load MCP tools
     mcp_tools = []
     if user_id and settings.MCP_GATEWAY_ENABLED:
@@ -175,4 +190,6 @@ async def router_node(state: AgentState) -> dict:
         "delegation_target": decision.specialist,
         "needs_planning": decision.needs_planning,
         "mcp_tools": mcp_tools,
+        "matched_skill": matched_skill,
+        "skill_execution_start": skill_start,
     }

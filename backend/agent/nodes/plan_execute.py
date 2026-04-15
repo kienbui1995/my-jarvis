@@ -82,9 +82,23 @@ Trả lời ngắn gọn, thân thiện bằng tiếng Việt."""
 
 
 async def planner_node(state: AgentState) -> dict:
-    """Generate execution plan from user request."""
+    """Generate execution plan from user request. Uses matched skill if available."""
     last_msg = state["messages"][-1].content if state["messages"] else ""
     model = state.get("selected_model", "gemini-2.0-flash")
+
+    # V8: If a skill was matched, use its adapted steps instead of LLM planning
+    matched_skill = state.get("matched_skill", {})
+    if matched_skill and matched_skill.get("adapted_steps"):
+        steps = matched_skill["adapted_steps"][:MAX_STEPS]
+        logger.info(f"Using skill '{matched_skill.get('skill_name')}' with {len(steps)} steps")
+        plan = {"steps": steps, "request": last_msg, "goal": last_msg, "from_skill": matched_skill.get("skill_id")}
+        return {
+            "execution_plan": plan,
+            "current_step": 0,
+            "step_results": [],
+            "replan_count": 0,
+        }
+
     tool_names = ", ".join(t.name for t in all_tools)
 
     workflow_hints = "\n".join(
@@ -105,7 +119,7 @@ async def planner_node(state: AgentState) -> dict:
         logger.warning("Plan parsing failed, single-step fallback")
         steps = [last_msg]
 
-    plan = {"steps": steps, "request": last_msg}
+    plan = {"steps": steps, "request": last_msg, "goal": last_msg}
 
     # M8: HITL — interrupt if plan is complex or has destructive actions
     if settings.HITL_ENABLED and len(steps) >= HITL_STEP_THRESHOLD:

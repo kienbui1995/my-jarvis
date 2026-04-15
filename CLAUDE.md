@@ -92,3 +92,24 @@ Zalo / Telegram / Web (WebSocket)
 - DB: async SQLAlchemy throughout, `async_session` context manager pattern
 - Tests require running services (postgres, redis) — run via `make test` inside Docker
 - Vietnamese is the primary user-facing language; code and comments may mix Vietnamese and English
+
+## Pending Migration: API & Error Handling Standard
+
+Chi tiet: xem `MIGRATE_API_ERROR_STANDARD.md` tai root du an.
+
+**Viec can lam**:
+1. Tao `backend/core/errors.py` — AppError class + `_error_body()` (giu `detail` field cho backward compat) + `setup_error_handlers(app)`
+2. Tao `backend/core/request_id.py` — RequestIDMiddleware (ASGI, inject `scope.state`)
+3. Sua `backend/main.py`:
+   - Them `app.add_middleware(RequestIDMiddleware)` DAU TIEN (truoc SecurityHeaders)
+   - Them `setup_error_handlers(app)` sau middleware
+4. Sua `backend/core/rate_limit.py` — doi 3 cho `JSONResponse({"detail": "..."})` sang `_rate_limit_response()` voi format `{detail: "...", error: {code: "RATE_LIMITED", ...}}`
+5. Sua `frontend/lib/api.ts` (luu y: `lib/` khong phai `src/lib/`):
+   - Them ApiError class (extends Error)
+   - Thay `throw new Error(await res.text())` bang JSON parsing voi `body.error` + fallback `body.detail`
+
+**Luu y quan trong**:
+- Middleware order: RequestID → SecurityHeaders → CORS → RateLimit
+- WebSocket rate limiting (`check_ws_rate()`) khong bi anh huong
+- Public API (`/api/public/v1/`) — kiem tra external consumers truoc khi deploy
+- Deploy backend + frontend cung luc

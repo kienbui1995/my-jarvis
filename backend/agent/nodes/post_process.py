@@ -70,4 +70,40 @@ async def post_process_node(state: AgentState) -> dict:
     if user_id and len(state["messages"]) >= 2:
         asyncio.create_task(_background_extract(list(state["messages"]), user_id))
 
+    # 3. M47: Extract skill from plan-and-execute tasks (fire-and-forget)
+    step_results = state.get("step_results", [])
+    if user_id and len(step_results) >= 3:
+        asyncio.create_task(_background_skill_extract(state))
+
     return {}
+
+
+async def _background_skill_extract(state: dict) -> None:
+    """Fire-and-forget: extract reusable skill from completed plan-and-execute task."""
+    try:
+        from memory.skill_learning import extract_skill_from_task, record_skill_execution
+        import time
+
+        user_id = state.get("user_id", "")
+        plan = state.get("execution_plan", {})
+        steps = state.get("step_results", [])
+        final = state.get("final_response", "")
+        matched = state.get("matched_skill", {})
+        start_time = state.get("skill_execution_start", 0)
+
+        async with async_session() as db:
+            # If this was a skill execution, record it
+            if matched.get("skill_id"):
+                duration = time.time() - start_time if start_time else None
+                await record_skill_execution(
+                    matched["skill_id"], user_id,
+                    input_summary=plan.get("goal", ""),
+                    output_summary=final[:500],
+                    steps=steps, success=True, duration=duration, db=db,
+                )
+            else:
+                # Try to extract a new skill from this task
+                task_desc = plan.get("goal", "") or (state["messages"][0].content if state["messages"] else "")
+                await extract_skill_from_task(user_id, task_desc, steps, final, db)
+    except Exception:
+        logger.debug("Background skill extraction failed", exc_info=True)

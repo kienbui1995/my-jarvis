@@ -68,9 +68,12 @@ async def search_cold_memory(user_id: str, query_embedding: list[float], db: Asy
     )
     memories = results.scalars().all()
 
-    # Update last_accessed
+    # Update last_accessed + access_count
     for m in memories:
-        await db.execute(update(Memory).where(Memory.id == m.id).values(last_accessed=datetime.utcnow()))
+        await db.execute(
+            update(Memory).where(Memory.id == m.id)
+            .values(last_accessed=datetime.utcnow(), access_count=Memory.access_count + 1)
+        )
     await db.commit()
 
     return [{"type": m.memory_type, "content": m.content, "importance": m.importance} for m in memories]
