@@ -53,5 +53,11 @@ lint: ## Run linters
 test: ## Run tests
 	$(DEV) exec backend pytest -x -q
 
+github-sync: ## Sync to public GitHub (excludes private files)
+	./scripts/sync-github.sh
+
+github-dry: ## Preview what would be excluded from GitHub
+	./scripts/sync-github.sh --dry-run
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'

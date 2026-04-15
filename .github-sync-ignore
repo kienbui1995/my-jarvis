@@ -1,0 +1,23 @@
+# Files/dirs to EXCLUDE when syncing to public GitHub repo.
+# These stay on ADO only. One pattern per line.
+
+# Internal CI/CD
+azure-pipelines.yml
+
+# Infrastructure secrets & deployment
+infra/cloudflared/
+.env.prod
+setup-tunnel.sh
+
+# Internal docs (business strategy, competitor analysis)
+docs/competitor-analysis-openclaw.md
+docs/superpowers/
+
+# AI assistant configs
+.claude/
+CLAUDE.md
+MIGRATE_API_ERROR_STANDARD.md
+
+# Internal scripts
+zalo_bot_setup.py
+backend/docs/FOUNDATION_EXAMPLES.py
