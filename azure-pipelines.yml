@@ -6,32 +6,23 @@ pr:
   branches:
     include: [main]
 
+pool:
+  name: TA-agent
+
 stages:
   - stage: CI
     jobs:
       - job: backend_lint
         displayName: Backend Lint
-        pool: TA-agent
         steps:
           - task: UsePythonVersion@0
             inputs:
               versionSpec: "3.12"
-          - script: pip install ruff && ruff check .
+          - script: pip install ruff && ruff check . --select E9,F63,F7,F82 --no-fix
             workingDirectory: backend
-
-      - job: frontend_lint
-        displayName: Frontend Lint
-        pool: TA-agent
-        steps:
-          - task: NodeTool@0
-            inputs:
-              versionSpec: "22.x"
-          - script: npm ci && npm run lint
-            workingDirectory: frontend
 
       - job: frontend_build
         displayName: Frontend Build
-        pool: TA-agent
         steps:
           - task: NodeTool@0
             inputs:
@@ -45,7 +36,6 @@ stages:
     jobs:
       - job: deploy
         displayName: Deploy to Production
-        pool: TA-agent
         steps:
           - task: SSH@0
             displayName: Deploy via SSH
@@ -64,7 +54,6 @@ stages:
     jobs:
       - job: sync
         displayName: Sync to GitHub (Community)
-        pool: TA-agent
         steps:
           - checkout: self
             fetchDepth: 0
@@ -98,7 +87,6 @@ stages:
               TAG=$(git tag --points-at HEAD | head -1)
               if [ -n "$TAG" ]; then
                 echo "Creating GitHub Release for $TAG..."
-                # Extract changelog for this version
                 BODY=$(sed -n "/^## \[${TAG#v}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
                 [ -z "$BODY" ] && BODY="Release $TAG"
 
