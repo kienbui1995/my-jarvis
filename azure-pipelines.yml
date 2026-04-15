@@ -98,6 +98,23 @@ stages:
               git remote add github https://$(GITHUB_PAT)@github.com/$(GITHUB_REPO).git
               git push github HEAD:main --force
               git push github --tags --force 2>/dev/null || true
+
+              # Create GitHub Release if tag exists on this commit
+              TAG=$(git tag --points-at HEAD | head -1)
+              if [ -n "$TAG" ]; then
+                echo "Creating GitHub Release for $TAG..."
+                # Extract changelog for this version
+                BODY=$(sed -n "/^## \[${TAG#v}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
+                [ -z "$BODY" ] && BODY="Release $TAG"
+
+                curl -s -X POST \
+                  -H "Authorization: token $(GITHUB_PAT)" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  "https://api.github.com/repos/$(GITHUB_REPO)/releases" \
+                  -d "$(jq -n --arg tag "$TAG" --arg name "MY JARVIS $TAG" --arg body "$BODY" \
+                    '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: false}')"
+                echo "GitHub Release $TAG created"
+              fi
             displayName: Filter & push to GitHub
             env:
               GITHUB_PAT: $(GITHUB_PAT)
