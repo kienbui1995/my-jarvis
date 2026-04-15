@@ -51,7 +51,7 @@ stages:
       - deployment: DeployProd
         displayName: Deploy to Production
         timeoutInMinutes: 30
-        environment: production
+        environment: jarvis-production
         strategy:
           runOnce:
             deploy:
