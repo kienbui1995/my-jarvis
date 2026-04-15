@@ -1,4 +1,6 @@
 """M52: Financial Dashboard + M53: Bill Reminders + M54: Subscription Tracker."""
+from datetime import date
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -82,7 +84,7 @@ class SubCreate(BaseModel):
     amount: float
     frequency: str = "monthly"
     category: str = "entertainment"
-    next_billing: str | None = None
+    next_billing: date | None = None
 
 
 @router.get("/subscriptions")

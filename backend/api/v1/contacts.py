@@ -1,4 +1,6 @@
 """M55+M56: Contact CRM + Birthday/Anniversary."""
+from datetime import date
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,8 +19,8 @@ class ContactCreate(BaseModel):
     phone: str | None = None
     email: str | None = None
     relationship: str | None = None
-    birthday: str | None = None
-    anniversary: str | None = None
+    birthday: date | None = None
+    anniversary: date | None = None
     company: str | None = None
     notes: str | None = None
 

@@ -39,10 +39,15 @@ class BirthdayReminderHandler(TriggerHandler):
 
     async def should_fire(self, trigger, event, db) -> bool:
         today = date.today()
-        contacts = (await db.execute(
-            select(Contact).where(Contact.user_id == trigger.user_id)
+        from sqlalchemy import func as sa_func
+        self._birthdays = (await db.execute(
+            select(Contact).where(
+                Contact.user_id == trigger.user_id,
+                Contact.birthday.isnot(None),
+                sa_func.extract("month", Contact.birthday) == today.month,
+                sa_func.extract("day", Contact.birthday) == today.day,
+            )
         )).scalars().all()
-        self._birthdays = [c for c in contacts if c.birthday and c.birthday.month == today.month and c.birthday.day == today.day]
         return len(self._birthdays) > 0
 
     async def build_message(self, trigger, event, db) -> str:
