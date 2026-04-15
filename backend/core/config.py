@@ -113,6 +113,17 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 
+    # V10 Integrations
+    SPOTIFY_CLIENT_ID: str = ""
+    SPOTIFY_CLIENT_SECRET: str = ""
+    SPOTIFY_REDIRECT_URI: str = ""
+    GOOGLE_PLACES_API_KEY: str = ""
+    GOOGLE_MAPS_API_KEY: str = ""
+    HOME_ASSISTANT_URL: str = ""
+    HOME_ASSISTANT_TOKEN: str = ""
+    NOTION_API_KEY: str = ""
+    GITHUB_TOKEN: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def validate_production(self) -> None:
