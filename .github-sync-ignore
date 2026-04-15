@@ -1,7 +1,30 @@
 # Files/dirs to EXCLUDE when syncing to public GitHub repo.
-# These stay on ADO only. One pattern per line.
+# Strategy: Open Core — public framework, private intelligence.
 
-# Internal CI/CD
+# ═══════════════════════════════════════════════════════
+# CORE INTELLIGENCE (proprietary — the "secret sauce")
+# ═══════════════════════════════════════════════════════
+
+# Agent intelligence pipeline (router, planner, skills matching, evaluation)
+backend/agent/nodes/
+
+# Memory intelligence (consolidation, decay, skill learning, preference extraction, KG)
+backend/memory/
+
+# Proactive trigger logic (morning briefing, pattern detection, insights)
+backend/services/handlers/
+
+# Smart LLM routing (model selection by complexity, budget, fallback chains)
+backend/llm/router.py
+
+# Injection detection
+backend/core/injection.py
+
+# ═══════════════════════════════════════════════════════
+# INTERNAL OPS
+# ═══════════════════════════════════════════════════════
+
+# CI/CD
 azure-pipelines.yml
 
 # Infrastructure secrets & deployment
@@ -9,15 +32,14 @@ infra/cloudflared/
 .env.prod
 setup-tunnel.sh
 
-# Internal docs (business strategy, competitor analysis)
+# Internal docs
 docs/competitor-analysis-openclaw.md
 docs/superpowers/
+docs/DEERFLOW_IMPLEMENTATION.md
 
 # AI assistant configs
 .claude/
 CLAUDE.md
 MIGRATE_API_ERROR_STANDARD.md
-
-# Internal scripts
 zalo_bot_setup.py
 backend/docs/FOUNDATION_EXAMPLES.py
