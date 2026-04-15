@@ -14,32 +14,35 @@ pool:
   name: Taureau-agent
 
 variables:
-  - name: EC2_HOST
-    value: '54.255.181.145'
+  # EC2 config — move to variable group for production
   - name: EC2_USER
     value: 'ubuntu'
   - name: EC2_APP_DIR
     value: '/data/projects/my-jarvis'
 
 stages:
-  # ── Stage 1: CI (PRs + branch pushes) ──
+  # ── Stage 1: CI ──
   - stage: CI
     displayName: 'CI — Lint & Build'
     condition: or(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: Backend
         displayName: Backend Lint
+        timeoutInMinutes: 10
         steps:
           - script: python3 -m pip install --user ruff && python3 -m ruff check . --select E9,F63,F7,F82 --no-fix
             workingDirectory: backend
 
       - job: Frontend
         displayName: Frontend Build
+        timeoutInMinutes: 15
         steps:
           - script: npm ci && npm run build
             workingDirectory: frontend
 
   # ── Stage 2: Deploy PROD (tag v*.*.*) ──
+  # NOTE: Add approval gate in ADO:
+  # Pipelines → Environments → production → Approvals and checks
   - stage: Deploy
     displayName: 'Deploy — PROD EC2'
     dependsOn: []
@@ -68,20 +71,18 @@ stages:
                     mkdir -p ~/.ssh
                     ssh-keyscan -H $(EC2_HOST) >> ~/.ssh/known_hosts 2>/dev/null
                     SSH="ssh -i $(sshKey.secureFilePath) $(EC2_USER)@$(EC2_HOST)"
-                    SCP="scp -i $(sshKey.secureFilePath)"
                     APP_DIR="$(EC2_APP_DIR)"
                     COMPOSE="docker compose -p my-jarvis -f docker-compose.yml -f docker-compose.prod.yml"
 
                     # ── Safety checks ──
                     if [ -z "$APP_DIR" ] || [ "$APP_DIR" = "/" ] || [ "$APP_DIR" = "/data" ] || [ "$APP_DIR" = "/data/projects" ]; then
-                      echo "❌ FATAL: EC2_APP_DIR is empty or too broad: '$APP_DIR'"
-                      exit 1
+                      echo "❌ FATAL: EC2_APP_DIR is empty or too broad: '$APP_DIR'"; exit 1
                     fi
 
-                    echo "==> [1/6] Ensure app directory..."
+                    echo "==> [1/7] Ensure app directory..."
                     $SSH "mkdir -p $APP_DIR"
 
-                    echo "==> [2/6] Rsync source to EC2 ($APP_DIR)..."
+                    echo "==> [2/7] Rsync source to EC2..."
                     rsync -az --delete \
                       --exclude='.git' --exclude='.env*' --exclude='__pycache__' \
                       --exclude='*.pyc' --exclude='node_modules' --exclude='.next' \
@@ -90,39 +91,37 @@ stages:
                       $(Build.SourcesDirectory)/ \
                       $(EC2_USER)@$(EC2_HOST):$APP_DIR/
 
-                    echo "==> [3/6] Verify .env.prod..."
+                    echo "==> [3/7] Verify .env.prod..."
                     $SSH "test -f $APP_DIR/.env.prod" || {
-                      echo "❌ .env.prod missing! Create on EC2 first:"
-                      echo "   ssh ubuntu@$(EC2_HOST) 'nano $APP_DIR/.env.prod'"
-                      exit 1
+                      echo "❌ .env.prod missing on EC2!"; exit 1
                     }
 
-                    echo "==> [4/6] Verify external networks exist..."
-                    $SSH "docker network inspect tunnel-net >/dev/null 2>&1" || {
-                      echo "⚠️ Creating tunnel-net network..."
-                      $SSH "docker network create tunnel-net"
-                    }
-                    $SSH "docker network inspect litellm-proxy_default >/dev/null 2>&1" || {
-                      echo "⚠️ Creating litellm-proxy_default network..."
-                      $SSH "docker network create litellm-proxy_default"
-                    }
+                    echo "==> [4/7] Verify external networks..."
+                    $SSH "docker network inspect tunnel-net >/dev/null 2>&1 || docker network create tunnel-net"
+                    $SSH "docker network inspect litellm-proxy_default >/dev/null 2>&1 || docker network create litellm-proxy_default"
 
-                    echo "==> [5/6] Run DB migrations..."
+                    echo "==> [5/7] Backup DB before migration..."
+                    BACKUP="jarvis_backup_$(date +%Y%m%d_%H%M%S).sql"
+                    $SSH "cd $APP_DIR && $COMPOSE exec -T postgres pg_dump -U \${POSTGRES_USER:-jarvis} \${POSTGRES_DB:-jarvis} > /tmp/$BACKUP 2>/dev/null" || echo "⚠️ DB backup skipped (first deploy or DB not running)"
+
+                    echo "==> [6/7] Run DB migrations..."
                     $SSH "cd $APP_DIR && $COMPOSE run --rm backend alembic upgrade head"
 
-                    echo "==> [6/6] Rebuild & restart (my-jarvis only)..."
+                    echo "==> [7/7] Rebuild & restart..."
                     $SSH "cd $APP_DIR && $COMPOSE up -d --build --remove-orphans"
 
-                    echo "==> Verify containers..."
+                    echo "==> Verify my-jarvis containers..."
                     $SSH "cd $APP_DIR && $COMPOSE ps"
 
                     echo "==> Verify sale-ai untouched..."
-                    $SSH "docker compose -p sale-ai ps --format 'table {{.Name}}\t{{.Status}}' 2>/dev/null | head -5" || true
+                    $SSH "docker compose -p sale-ai ps 2>/dev/null | head -5" || true
 
-                    echo "✅ Deploy complete!"
-                  displayName: 'Rsync + Migrate + Restart'
+                    echo "✅ Deploy complete! (DB backup: /tmp/$BACKUP)"
+                  displayName: 'Rsync + Backup + Migrate + Restart'
+                  env:
+                    EC2_HOST: $(EC2_HOST)
 
-  # ── Stage 3: Smoke Test (after Deploy) ──
+  # ── Stage 3: Smoke Test ──
   - stage: SmokeTest
     displayName: Smoke Test
     dependsOn: Deploy
@@ -142,6 +141,13 @@ stages:
                   ACTUAL=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('version',''))" 2>/dev/null)
                   if [ "$ACTUAL" = "$EXPECTED" ]; then
                     echo "✅ /health OK — version $ACTUAL"
+
+                    echo "==> Checking /health/ready..."
+                    curl -sf https://jarvis.pmai.space/health/ready | python3 -c "
+                    import sys,json; d=json.load(sys.stdin)
+                    for k,v in d.get('checks',{}).items(): print(f'  {k}: {v}')
+                    print(f'Status: {d[\"status\"]}')
+                    " 2>/dev/null || true
                     exit 0
                   fi
                 fi
@@ -149,20 +155,22 @@ stages:
                 sleep 10
               done
               echo "❌ Health check timed out"; exit 1
-            displayName: Verify health + version
+            displayName: Verify health + version + dependencies
 
-  # ── Stage 4: Sync GitHub (branch push only) ──
+  # ── Stage 4: Sync GitHub (after CI passes) ──
   - stage: SyncGitHub
     displayName: Sync GitHub (Community)
-    dependsOn: []
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    dependsOn: CI
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: sync
         displayName: Filter & push to GitHub
+        timeoutInMinutes: 10
         steps:
           - checkout: self
             fetchDepth: 0
           - script: |
+              set -euo pipefail
               git config user.name "MY JARVIS CI"
               git config user.email "ci@jarvis.pmai.space"
 
@@ -180,7 +188,7 @@ stages:
               git push github HEAD:main --force
               git push github --tags --force 2>/dev/null || true
 
-              # Create GitHub Release if tag
+              # Create GitHub Release if tag on HEAD
               TAG=$(git tag --points-at HEAD | head -1)
               if [ -n "$TAG" ]; then
                 BODY=$(sed -n "/^## \[${TAG#v}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
@@ -197,3 +205,25 @@ stages:
             env:
               GITHUB_PAT: $(GITHUB_PAT)
               GITHUB_REPO: $(GITHUB_REPO)
+
+  # ── Stage 5: Notify on failure ──
+  - stage: Notify
+    displayName: Notify on Failure
+    dependsOn: [CI, Deploy, SmokeTest, SyncGitHub]
+    condition: failed()
+    jobs:
+      - job: Alert
+        displayName: Send failure alert
+        timeoutInMinutes: 5
+        steps:
+          - script: |
+              PIPELINE_URL="$(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)"
+              BRANCH="$(Build.SourceBranchName)"
+              echo "❌ MY JARVIS CI/CD FAILED"
+              echo "Branch: $BRANCH"
+              echo "Build: $PIPELINE_URL"
+              echo "Reason: $(Build.Reason)"
+              # TODO: Add Slack/Telegram webhook notification
+              # curl -s -X POST "$(SLACK_WEBHOOK_URL)" -H "Content-Type: application/json" \
+              #   -d "{\"text\": \"❌ MY JARVIS CI/CD FAILED — Branch: $BRANCH — <$PIPELINE_URL|Build #$(Build.BuildId)>\"}"
+            displayName: Log failure details
