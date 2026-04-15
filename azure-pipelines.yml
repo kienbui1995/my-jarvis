@@ -30,23 +30,19 @@ stages:
           - script: npm ci && npm run build
             workingDirectory: frontend
 
-  - stage: Deploy
-    dependsOn: CI
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['DEPLOY_ENABLED'], 'true'))
-    jobs:
-      - job: deploy
-        displayName: Deploy to Production
-        steps:
-          - task: SSH@0
-            displayName: Deploy via SSH
-            inputs:
-              sshEndpoint: jarvis-server
-              runOptions: inline
-              inline: |
-                cd ~/my-jarvis
-                git pull origin main
-                make build
-                make prod
+  # Deploy stage — uncomment when jarvis-server SSH service connection is configured
+  # - stage: Deploy
+  #   dependsOn: CI
+  #   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  #   jobs:
+  #     - job: deploy
+  #       steps:
+  #         - task: SSH@0
+  #           inputs:
+  #             sshEndpoint: jarvis-server
+  #             runOptions: inline
+  #             inline: |
+  #               cd ~/my-jarvis && git pull origin main && make build && make prod
 
   - stage: SyncGitHub
     dependsOn: CI
