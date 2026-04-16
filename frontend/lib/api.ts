@@ -102,8 +102,6 @@ export const api = {
   mcpDelete: (id: string) => request<{ ok: boolean }>(`/mcp/${id}`, { method: "DELETE" }),
   mcpTools: (id: string) => request<{ tools: Array<{ name: string; description: string }> }>(`/mcp/${id}/tools`),
   mcpHealth: (id: string) => request<{ status: string; tools_count?: number; error?: string }>(`/mcp/${id}/health`),
-};
-
   // V9: Finance
   financeDashboard: () => request<{ month_total: number; by_category: Record<string, number>; subscriptions_monthly: number }>("/finance/dashboard"),
   listBills: () => request<{ data: Array<{ id: string; name: string; amount: number; due_day: number; category: string; enabled: boolean }> }>("/finance/bills"),
@@ -140,3 +138,4 @@ export const api = {
   listGoals: () => request<{ data: Array<{ id: string; title: string; target_value?: number; current_value: number; status: string; deadline?: string }> }>("/dashboard/goals"),
   createGoal: (title: string, target_value?: number, deadline?: string) => request<{ id: string }>("/dashboard/goals", { method: "POST", body: JSON.stringify({ title, target_value, deadline }) }),
   updateGoal: (id: string, data: Record<string, unknown>) => request<{ ok: boolean }>(`/dashboard/goals/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+};
